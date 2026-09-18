@@ -28,8 +28,9 @@ echo "run_id: ${RUN_ID}"
 echo "image:  ${CHECKOUT_IMAGE}"
 kubectl apply -f "$RENDER"
 
-kubectl -n "$NAMESPACE" rollout status deploy/checkout-v1 --timeout=180s
-kubectl -n "$NAMESPACE" rollout status deploy/checkout-v2 --timeout=180s
+for d in $(kubectl -n "$NAMESPACE" get deploy -l "$APP_LABEL" -o name); do
+  kubectl -n "$NAMESPACE" rollout status "$d" --timeout=180s
+done
 
 echo
 echo "Ordinary traffic starts 100% on v1 (healthy baseline)."

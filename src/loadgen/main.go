@@ -41,6 +41,7 @@ type config struct {
 	duration     time.Duration
 	warmup       time.Duration
 	runID        string
+	service      string
 	trafficClass string
 	generatorID  string
 	maxInflight  int
@@ -91,6 +92,7 @@ func main() {
 	flag.DurationVar(&cfg.duration, "duration", envDur("DURATION", 60*time.Second), "0 runs until interrupted")
 	flag.DurationVar(&cfg.warmup, "warmup", envDur("WARMUP", 10*time.Second), "initial period labelled traffic_class=warmup and excluded by the contract")
 	flag.StringVar(&cfg.runID, "run-id", env("RUN_ID", ""), "defaults to a timestamp")
+	flag.StringVar(&cfg.service, "service", env("SERVICE_NAME", "checkout"), "service name stamped on every record; must match the contract's service")
 	flag.StringVar(&cfg.trafficClass, "traffic-class", env("TRAFFIC_CLASS", "ordinary"), "ordinary or synthetic")
 	flag.StringVar(&cfg.generatorID, "generator-id", env("GENERATOR_ID", "loadgen-1"), "")
 	flag.IntVar(&cfg.maxInflight, "max-inflight", envInt("MAX_INFLIGHT", 400), "bound on concurrent requests")
@@ -198,7 +200,7 @@ func doRequest(client *http.Client, cfg config, class, host string) record {
 		RunID:        cfg.runID,
 		RequestID:    reqID,
 		TrafficClass: class,
-		Service:      "checkout",
+		Service:      cfg.service,
 		Version:      "unknown",
 		GeneratorID:  cfg.generatorID,
 		TargetHost:   host,

@@ -21,6 +21,7 @@ NAMESPACE="${NAMESPACE:-checkout}"
 ROUTE_NAME="${ROUTE_NAME:-checkout-route}"
 LEDGER_DIR="${LEDGER_DIR:-evidence}"
 CLUSTER_NAME="${CLUSTER_NAME:-sloproof}"
+APP_LABEL="${APP_LABEL:-app=checkout}"
 AWS_REGION="${AWS_REGION:-us-west-2}"
 
 require_kubeconfig() {

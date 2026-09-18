@@ -14,16 +14,16 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: sloproof
-  region: us-west-2
+  name: __CLUSTER_NAME__
+  region: __AWS_REGION__
   tags:
     project: sloproof
     purpose: hackathon-demo
 
 # Two AZs is the EKS minimum. More AZs cost more and prove nothing extra here.
 availabilityZones:
-  - us-west-2a
-  - us-west-2b
+  - __AWS_REGION__a
+  - __AWS_REGION__b
 
 # OIDC is not needed for Envoy Gateway, but enabling it at create time is what
 # makes a later move to the AWS Load Balancer Controller (IRSA) a small change

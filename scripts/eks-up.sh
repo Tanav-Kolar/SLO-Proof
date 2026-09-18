@@ -20,7 +20,17 @@ if aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" >/dev/
   echo "cluster $CLUSTER_NAME already exists; writing kubeconfig only"
 else
   echo "creating cluster $CLUSTER_NAME in $AWS_REGION (15-20 min)"
-  eksctl create cluster -f infra/eks/cluster.yaml --kubeconfig "$KUBECONFIG"
+  RENDERED="$(mktemp)"
+  trap 'rm -f "$RENDERED"' EXIT
+  sed -e "s|__AWS_REGION__|${AWS_REGION}|g" \
+      -e "s|__CLUSTER_NAME__|${CLUSTER_NAME}|g" \
+      infra/eks/cluster.yaml > "$RENDERED"
+  if grep -q '__[A-Z_]*__' "$RENDERED"; then
+    echo "REFUSING: unsubstituted placeholders in the cluster config" >&2
+    grep -o '__[A-Z_]*__' "$RENDERED" | sort -u >&2
+    exit 1
+  fi
+  eksctl create cluster -f "$RENDERED" --kubeconfig "$KUBECONFIG"
 fi
 
 aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION" --kubeconfig "$KUBECONFIG"

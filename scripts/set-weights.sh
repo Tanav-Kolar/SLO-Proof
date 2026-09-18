@@ -29,10 +29,17 @@ idx = [i for i, r in enumerate(rules)
        if not any("headers" in m for m in r.get("matches", []))]
 if len(idx) != 1:
     sys.exit(f"expected exactly one ordinary (header-free) rule, found {idx}")
-v1, v2 = sys.argv[1], sys.argv[2]
+# Preserve whatever backends the route already names and change only their
+# weights. Hardcoding backend names here would both break reuse on another
+# service and silently clobber a backend someone else had edited.
+refs = [dict(r) for r in rules[idx[0]]["backendRefs"]]
+weights = [int(w) for w in sys.argv[1:]]
+if len(refs) != len(weights):
+    sys.exit(f"route has {len(refs)} backends but {len(weights)} weights were given")
+for ref, w in zip(refs, weights):
+    ref["weight"] = w
 print(json.dumps([{"op": "replace", "path": f"/spec/rules/{idx[0]}/backendRefs",
-                   "value": [{"name": "checkout-v1", "port": 80, "weight": int(v1)},
-                             {"name": "checkout-v2", "port": 80, "weight": int(v2)}]}]))
+                   "value": refs}]))
 ' "$V1" "$V2")"
 
 AFTER="$(kubectl -n "$NAMESPACE" patch httproute "$ROUTE_NAME" --type=json -p "$PATCH" -o json)"
