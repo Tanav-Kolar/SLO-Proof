@@ -1,4 +1,4 @@
-# SLOProof — evidence for recovery decisions
+w# SLOProof — evidence for recovery decisions
 
 18 September 2026.
 
@@ -211,6 +211,8 @@ can be re-derived from the retained queries.
 python3 scripts/render-evidence.py
 python3 -m http.server 8768 --bind 127.0.0.1 --directory demo
 ```
+Pitch deck link : https://docs.google.com/presentation/d/1nGVhCJGwVdq1QCInwFuHHVC6mmjR8qny/edit?usp=sharing&ouid=118334502760775484256&rtpof=true&sd=true
+
 
 `http://127.0.0.1:8768/` opens the decision challenge: predict each verdict, then see
 the recorded one. It opens by asking whether you would ship a candidate with 100%
