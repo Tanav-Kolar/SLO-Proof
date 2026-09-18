@@ -6,6 +6,7 @@ import (
 	"fmt"
 	c "github.com/someshwaranM/forge-tyr/src/control"
 	"os"
+	"time"
 )
 
 func check(err error) {
@@ -17,7 +18,7 @@ func check(err error) {
 func emit(v any) { e := json.NewEncoder(os.Stdout); e.SetIndent("", "  "); check(e.Encode(v)) }
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: controller freeze|trial|observe|record|route")
+		fmt.Fprintln(os.Stderr, "usage: controller freeze|trial|advance|observe|record|policy|route")
 		os.Exit(1)
 	}
 	cmd := os.Args[1]
@@ -25,6 +26,7 @@ func main() {
 	run := fs.String("run-id", "", "run ID")
 	config := fs.String("config-hash", "", "live v1 hash")
 	input := fs.String("input", "", "verifier result JSON")
+	previous := fs.String("from-run", "", "previous proved stage for adjacent rollout progression")
 	check(fs.Parse(os.Args[2:]))
 	e := c.Elastic{Endpoint: os.Getenv("ELASTIC_CLOUD_ENDPOINT"), Key: os.Getenv("ELASTIC_CONTROLLER_API_KEY")}
 	if cmd == "route" {
@@ -58,6 +60,30 @@ func main() {
 		r, err = c.Effective(e, f, r)
 		check(err)
 		check(c.WriteReceipt(e, r, true))
+		emit(r)
+	case "policy":
+		id, v, err := c.ReadRecordedVerdict(e, *run)
+		check(err)
+		f, err := c.ReadFrozen(e, *run)
+		check(err)
+		d, err := c.RecordRolloutPolicy(e, f, id, v)
+		check(err)
+		emit(d)
+	case "advance":
+		check(c.ValidateID(*previous))
+		_, v, err := c.ReadRecordedVerdict(e, *previous)
+		check(err)
+		prior, err := c.ReadFrozen(e, *previous)
+		check(err)
+		next, err := c.ReadFrozen(e, *run)
+		check(err)
+		_, _, err = next.ValidateLocal("contracts/checkout-slo.json", "elastic/queries")
+		check(err)
+		weight, err := c.ValidateAdvance(prior, v, next, time.Now())
+		check(err)
+		check(c.Append(e, *run, "rollout_stage_authorized", next.Hash, map[string]any{"previous_run_id": *previous, "next_candidate_weight": weight, "plan": c.RolloutWeights}, nil))
+		r, err := c.Execute(e, next, weight, 100-weight)
+		check(err)
 		emit(r)
 	case "record":
 		b, err := os.ReadFile(*input)

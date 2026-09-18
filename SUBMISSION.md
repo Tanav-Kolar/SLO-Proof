@@ -4,6 +4,12 @@ Submission draft, 18 September 2026. Scoped credentials and real trial evidence
 are available. See [live validation](docs/LIVE_VALIDATION_20260918.md) for exact
 measurements, encountered failures and operational limits.
 
+Latest addition: [three explicit rollout outcomes](docs/ROLLOUT_CASES.md), a
+guarded 10/25/50/100% runner, bounded evidence retries, and actual Slack escalation
+inside `sloproof-loop`. All three native workflow branches were exercised on
+recorded trials; Slack confirmed the failed-recovery alert. Fresh later-stage
+EKS execution remains unvalidated because AWS authentication expired.
+
 ## Team
 
 - Team name: tyr
@@ -30,9 +36,10 @@ non-overlapping 60-second windows, success rate of at least 99%, and p95 latency
 strictly below 300 ms. Completeness, reconciliation, configuration identity, and
 observed routing are checked before a pass is possible.
 
-PROVED means the observed trial met its contract and is eligible for operator
-review. It does not establish full-load recovery. Every verdict leaves routing
-unchanged: this prototype does not autonomously promote or reverse traffic.
+PROVED means the observed trial met its contract. In an operator-started plan,
+the runner can continue one guarded adjacent stage and measure again. The saved
+10% pass does not establish full-load recovery. Verdict generation itself leaves
+routing unchanged; there is no automatic reversal.
 
 ## Architecture
 
@@ -49,7 +56,8 @@ unchanged: this prototype does not autonomously promote or reverse traffic.
 - Elastic integration: Agent Builder provides an Investigator, Verdict Explainer
   and Evidence Briefer. A native Elastic Workflow retrieves the existing Go
   verdict, checks that exactly one decision exists, and sequences investigation
-  and explanation. It has no routing or verdict-writing step.
+  and explanation. It branches on a matching deterministic rollout policy and
+  sends configured Slack alerts; it has no routing or verdict-writing step.
 - Presentation: an interactive “Would you ship this recovery?” walkthrough asks
   the audience to predict each result, then reveals the recorded Go verdict and
   native Elastic review. A full evidence view retains receipts and exact queries.

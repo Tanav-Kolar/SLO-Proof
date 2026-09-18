@@ -1,5 +1,7 @@
 # Would you ship this recovery?
 
+The three operational outcomes and latest Slack receipt are documented in [ROLLOUT_CASES.md](ROLLOUT_CASES.md). Use **Next step / Slack** after a reveal to show continued rollout, a paused failed recovery, or the bounded response to insufficient evidence.
+
 Use a four-minute audience decision challenge. Open `demo/index.html` or
 `http://127.0.0.1:8768/` and reset the presentation before starting. Show this
 screen first; keep the full evidence view ready for questions.
@@ -15,8 +17,8 @@ returning traffic to the worse version.
 |---|---|---|
 | 0:00–0:20 | Candidate A. Point to 100% success and the frozen criteria. Ask for a show of hands; select the audience prediction. | “Every candidate checkout succeeded. Does this recovery meet the whole contract?” |
 | 0:20–1:10 | Reveal **FAILED**. Point to all three p95 windows. | “About 508 ms still misses our strict 300 ms target. Better is not yet recovered. FAILED does not send users back to the worse incident version.” |
-| 1:10–1:55 | Open **Why?** Show completed Elastic steps and the saved Evidence Briefer response. | “Elastic investigates the measured window and explains the Go decision. Its agents have no routing or verdict-writing tool. The decision already existed before this review.” |
-| 1:55–2:35 | Close the dialog, select **Next case**, reveal **PROVED**. | “Same contract. About 57 ms, 100% success, 600 candidate requests in each window. This trial is eligible for operator review. Full-load recovery still needs measurement.” |
+| 1:10–1:55 | Open **Why?** Show completed Elastic steps and the saved Evidence Briefer response. | “Elastic investigates the measured window and explains the Go decision. Its agents have no routing or verdict-writing tool. The deterministic policy branch and configured Slack alert happen before advisory AI.” |
+| 1:55–2:35 | Close the dialog, select **Next case**, reveal **PROVED**. | “Same contract. About 57 ms, 100% success, 600 candidate requests in each window. This passing stage permits the next step of an operator-started rollout plan. Every expanded stage needs a new measurement; the later stages are not part of this saved trial.” |
 | 2:35–3:05 | Next case, reveal **INCONCLUSIVE**. | “This execution was refused and has no observed-route receipt. No measurements cannot become zero errors. The verifier declines to establish recovery.” |
 | 3:05–3:40 | **Show the trust boundary**. Show the actual 403 results and zero-agent-call check. | “The verifier cannot rewrite requests, contracts, or the ledger. The Elastic workflow also refuses to call an agent without a recorded decision.” |
 | 3:40–4:00 | Stay on the boundary view; close with the product. | “For platform teams, SLOProof turns a proposed recovery into an inspectable decision: frozen criteria, measured outcomes, and a receipt. AI can make a case for recovery. It cannot award itself a pass.” |

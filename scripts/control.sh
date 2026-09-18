@@ -2,7 +2,7 @@
 # Build both executables; verifier runs with an allowlisted environment.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-[[ $# -ge 1 ]] || { echo 'usage: scripts/control.sh verify|freeze|trial|observe|record|route [flags]' >&2; exit 1; }
+[[ $# -ge 1 ]] || { echo 'usage: scripts/control.sh verify|freeze|trial|advance|observe|record|policy|route [flags]' >&2; exit 1; }
 mkdir -p build
 (cd src/control && go build -o ../../build/verifier ./cmd/verifier && go build -o ../../build/controller ./cmd/controller)
 mode="$1"; shift

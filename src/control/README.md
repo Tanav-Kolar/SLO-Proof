@@ -42,10 +42,17 @@ The 30-second convergence allowance and all observation criteria are unchanged.
 ## Remaining limitations
 
 The commands implement contract freeze → trial → observed receipt → verification
-→ ledger append. Automatic promotion, reversal, durable end-to-end state-machine
-recovery and an independent expiry watchdog are **not implemented**. Only the
-10/90 trial is exposed by the controller CLI. There is no LLM invocation or agent
-entry point. The operator still owns faults, setup, and reset.
+→ ledger append. The added `policy` and `advance` commands support an explicitly
+operator-started 10/25/50/100% rollout plan. Each next stage requires a fresh
+PROVED decision and unchanged configuration/route; every new stage is frozen
+and measured again. Local guard tests pass; fresh EKS progression remains
+unvalidated because AWS authentication expired. See
+[the three cases](../../docs/ROLLOUT_CASES.md) for exact retained validation.
+
+Autonomous incident initiation, automatic reversal, durable end-to-end restart
+recovery and an independent expiry watchdog are **not implemented**. There is
+no LLM invocation or agent entry point in the executor. The operator owns
+scenario setup and explicitly starts the plan.
 
 Hashing provides traceability, not immutability against an operator with setup
 credentials. The controller holds ledger-write access and could forge records;
@@ -101,6 +108,12 @@ PROVED is `ELIGIBLE_FOR_OPERATOR_REVIEW`, limited to the observed trial.
 The ledger writer re-derives these fields rather than trusting supplied guidance.
 A candidate can be better than the incident version while failing the contract;
 that result must never automatically send traffic back to a worse version.
+
+The distinct `rollout_policy` event is derived from this recorded verdict and
+matching frozen criteria. It does not rewrite the verdict or itself execute a
+route patch. `scripts/rollout.sh` consumes passing stages through the guarded
+`advance` command; FAILED and INCONCLUSIVE stop the loop. Temporary evidence
+failures get at most two read-only retries with identical frozen windows.
 
 `scripts/run-trial.sh healthy|bad-recovery <unique-run-id>` implements one
 operator-supervised scenario and `scripts/render-evidence.py` builds its read-only

@@ -1,0 +1,1578 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "attempt": 2,
+  "started_at": "2026-09-18T09:34:48.130854+00:00",
+  "workflow_id": "sloproof-loop",
+  "execution_id": "c92b3b29-0470-4121-b2b2-c20d07856658",
+  "source_document_id": "0aa2301e22be1afcd3c627c2f4482862",
+  "recorded_verdict": "FAILED",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "scope": "Post-verification rollout policy and optional Slack escalation; AI does not decide or route traffic",
+  "status": "completed",
+  "rollout_policy": {
+    "run_id": "demo-slow-20260918-02",
+    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+    "source_verdict_id": "0aa2301e22be1afcd3c627c2f4482862",
+    "source_verified_at": "2026-09-18T08:21:50.376012Z",
+    "recorded_verdict": "FAILED",
+    "action": "PAUSE_AND_INVESTIGATE",
+    "signal": "BOTH_VERSIONS_BREACH",
+    "explanation": "Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target.",
+    "execution": "POLICY_ONLY_NO_ROUTING_PERFORMED",
+    "candidate_weight_plan": [
+      10,
+      25,
+      50,
+      100
+    ],
+    "current_candidate_weight": 10,
+    "both_versions_unhealthy": true,
+    "shared_cause_proven": false,
+    "window_comparisons": [
+      {
+        "window_index": 0,
+        "window_start": "2026-09-18T08:16:55.99Z",
+        "window_end": "2026-09-18T08:17:55.99Z",
+        "candidate_p95_ms": 507.5396,
+        "candidate_success_rate": 1,
+        "original_p95_ms": 857.6078,
+        "original_success_rate": 0.8001111522786217,
+        "original_window_outcome": "FAILED"
+      },
+      {
+        "window_index": 1,
+        "window_start": "2026-09-18T08:17:55.99Z",
+        "window_end": "2026-09-18T08:18:55.99Z",
+        "candidate_p95_ms": 507.694,
+        "candidate_success_rate": 1,
+        "original_p95_ms": 857.6461999999999,
+        "original_success_rate": 0.7999629561029821,
+        "original_window_outcome": "FAILED"
+      },
+      {
+        "window_index": 2,
+        "window_start": "2026-09-18T08:18:55.99Z",
+        "window_end": "2026-09-18T08:19:55.99Z",
+        "candidate_p95_ms": 507.6235,
+        "candidate_success_rate": 1,
+        "original_p95_ms": 857.609,
+        "original_success_rate": 0.8000370301795964,
+        "original_window_outcome": "FAILED"
+      }
+    ],
+    "evidence_retry": {
+      "allowed": false,
+      "delay_seconds": 30,
+      "max_additional_attempts": 2,
+      "same_frozen_windows": true,
+      "reason": "A conclusive result is never retried to search for a better outcome."
+    },
+    "retry_budget_exhausted": false
+  },
+  "notifications_enabled": true,
+  "workflow_sha256": "39d31a4cdf955e061989473fa810a138f7ee8ce94d2becde448c6c4e1f3d8927",
+  "collected_at": "2026-09-18T09:36:18.877084+00:00",
+  "execution": {
+    "id": "c92b3b29-0470-4121-b2b2-c20d07856658",
+    "workflowId": "sloproof-loop",
+    "workflowDefinition": {
+      "version": "1",
+      "name": "sloproof-loop",
+      "description": "Apply deterministic rollout outcomes: continue the planned next stage, pause and notify Slack on failed recovery, or hold and escalate insufficient evidence. AI explains after the operational branch; it never routes.",
+      "settings": {
+        "timeout": "5m"
+      },
+      "enabled": true,
+      "tags": [
+        "sloproof",
+        "deterministic-rollout-policy",
+        "slack-escalation"
+      ],
+      "steps": [
+        {
+          "name": "read_verdict",
+          "type": "elasticsearch.search",
+          "with": {
+            "track_total_hits": true,
+            "query": {
+              "bool": {
+                "filter": [
+                  {
+                    "term": {
+                      "run_id": "{{ inputs.run_id }}"
+                    }
+                  },
+                  {
+                    "term": {
+                      "event": "verdict"
+                    }
+                  },
+                  {
+                    "term": {
+                      "actor": "deterministic-verifier"
+                    }
+                  }
+                ]
+              }
+            },
+            "size": 2,
+            "_source": [
+              "run_id",
+              "event",
+              "actor",
+              "verdict",
+              "reason",
+              "contract_hash",
+              "detail.run_id",
+              "detail.verdict",
+              "detail.reason",
+              "detail.contract_hash",
+              "detail.verified_at",
+              "detail.recovery_assessment",
+              "detail.windows.window_start",
+              "detail.windows.window_end",
+              "detail.windows.requests",
+              "detail.windows.success_rate",
+              "detail.windows.p95_ms",
+              "detail.windows.verdict"
+            ],
+            "index": "sloproof-ledger"
+          }
+        },
+        {
+          "name": "require_recorded_verdict",
+          "type": "if",
+          "condition": "steps.read_verdict.output.hits.total.value: 1",
+          "steps": [
+            {
+              "name": "read_rollout_policy",
+              "type": "elasticsearch.search",
+              "with": {
+                "track_total_hits": true,
+                "query": {
+                  "bool": {
+                    "filter": [
+                      {
+                        "term": {
+                          "run_id": "{{ inputs.run_id }}"
+                        }
+                      },
+                      {
+                        "term": {
+                          "event": "rollout_policy"
+                        }
+                      },
+                      {
+                        "term": {
+                          "actor": "deterministic-rollout-policy"
+                        }
+                      },
+                      {
+                        "term": {
+                          "contract_hash": "{{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "size": 2,
+                "index": "sloproof-ledger"
+              }
+            },
+            {
+              "name": "require_rollout_policy",
+              "type": "if",
+              "condition": "steps.read_rollout_policy.output.hits.total.value: 1 and steps.read_rollout_policy.output.hits.hits.0._source.detail.source_verdict_id: \"{{ steps.read_verdict.output.hits.hits[0]._id }}\" and steps.read_rollout_policy.output.hits.hits.0._source.detail.recorded_verdict: \"{{ steps.read_verdict.output.hits.hits[0]._source.verdict }}\"",
+              "steps": [
+                {
+                  "name": "rollout_outcome",
+                  "type": "if",
+                  "condition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"PROVED\" and (steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"CONTINUE_PLAN\" or steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"PLAN_COMPLETE\")",
+                  "steps": [
+                    {
+                      "name": "continue_planned_rollout",
+                      "type": "console",
+                      "with": {
+                        "message": "Policy {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}. The rollout runner owns the guarded execution. This console step does not move traffic."
+                      }
+                    }
+                  ],
+                  "else": [
+                    {
+                      "name": "failed_recovery",
+                      "type": "if",
+                      "condition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"FAILED\"",
+                      "steps": [
+                        {
+                          "name": "pause_rollout",
+                          "type": "console",
+                          "with": {
+                            "message": "PAUSE_AND_INVESTIGATE: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}"
+                          }
+                        },
+                        {
+                          "name": "notify_failed_rollout",
+                          "type": "slack_api.postMessage",
+                          "if": "inputs.notify: true",
+                          "with": {
+                            "channelNames": [
+                              "#all-on-call-engineering-team"
+                            ],
+                            "text": "SLOProof rollout PAUSED \u2014 recorded trial {{ inputs.run_id }}. Signal: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}. Candidate verdict: FAILED. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} Window comparisons: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.window_comparisons | json }}. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: {{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. This alert reviews recorded generated-traffic evidence."
+                          },
+                          "connector-id": "sloproof-slack-alerts"
+                        }
+                      ],
+                      "else": [
+                        {
+                          "name": "hold_rollout",
+                          "type": "console",
+                          "with": {
+                            "message": "HOLD: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}"
+                          }
+                        },
+                        {
+                          "name": "notify_inconclusive_rollout",
+                          "type": "slack_api.postMessage",
+                          "if": "inputs.notify: true",
+                          "with": {
+                            "channelNames": [
+                              "#all-on-call-engineering-team"
+                            ],
+                            "text": "SLOProof rollout HELD \u2014 recorded trial {{ inputs.run_id }}. Verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} No expansion or blind rollback. Evidence retry policy: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.evidence_retry | json }}. Budget exhausted: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.retry_budget_exhausted }}. Temporary delays are reverified by the read-only runner against the same frozen windows, at most twice within 120 seconds. Missing receipts, changed config, underpowered completed cohorts and invalid evidence require repair and a new trial. Workflow replay never refreshes the retry budget or reruns a route patch. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. Recorded generated-traffic evidence."
+                          },
+                          "connector-id": "sloproof-slack-alerts"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "investigate_if_measured",
+                  "type": "if",
+                  "condition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+                  "steps": [
+                    {
+                      "name": "investigate",
+                      "type": "ai.agent",
+                      "with": {
+                        "message": "Investigate run {{ inputs.run_id }} using sloproof_window_metrics and sloproof_evidence_completeness for window_start {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_start }} inclusive and window_end {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_end }} exclusive. Cite the tool IDs and input parameters. This is a review of a completed trial. Recommend operator next steps only."
+                      },
+                      "on-failure": {
+                        "continue": true
+                      },
+                      "agent-id": "sloproof_investigator"
+                    }
+                  ],
+                  "else": [
+                    {
+                      "name": "no_observation_window",
+                      "type": "console",
+                      "with": {
+                        "message": "No recorded observation window exists. Skip metric interpretation; explain the missing evidence."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "explain_recorded_verdict",
+                  "type": "ai.agent",
+                  "with": {
+                    "message": "Explain the existing deterministic verdict for run {{ inputs.run_id }}. Call sloproof_recorded_verdict to retrieve it independently. Here is the recorded decision and its bounded windows: {{ steps.read_verdict.output.hits.hits[0]._source | json }} Copy its verdict exactly; do not issue a new verdict. Explain the reason, scope, and next operator decision. No routing has changed."
+                  },
+                  "on-failure": {
+                    "continue": true
+                  },
+                  "agent-id": "sloproof_verifier"
+                },
+                {
+                  "name": "recorded_result",
+                  "type": "console",
+                  "with": {
+                    "message": "Recorded Go verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. Run: {{ inputs.run_id }}. Rollout policy: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}. This workflow did not change traffic. The operator-started rollout runner executes only a fresh, adjacent, verified stage; AI output cannot authorize it."
+                  }
+                }
+              ],
+              "else": [
+                {
+                  "name": "missing_rollout_policy",
+                  "type": "console",
+                  "with": {
+                    "message": "REVIEW_BLOCKED: missing or inconsistent deterministic rollout policy. No agent, notification or routing action is authorized. Record policy with scripts/control.sh policy before review."
+                  }
+                }
+              ]
+            }
+          ],
+          "else": [
+            {
+              "name": "missing_or_ambiguous_verdict",
+              "type": "console",
+              "with": {
+                "message": "REVIEW_BLOCKED for run {{ inputs.run_id }}: expected exactly one deterministic verdict, found {{ steps.read_verdict.output.hits.total.value }}. No agent was called and no verdict or routing action was produced."
+              }
+            }
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "type": "manual",
+          "inputs": [
+            {
+              "name": "run_id",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "notify",
+              "description": "Send failure or evidence-hold alerts to the configured SLOProof Slack channel. Set false for a silent replay.",
+              "default": true,
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    },
+    "yaml": "version: '1'\nname: sloproof-loop\ndescription: 'Apply deterministic rollout outcomes: continue the planned next stage, pause and notify Slack on failed recovery, or hold and escalate insufficient evidence. AI explains after the operational branch; it never routes.'\nenabled: true\ntags:\n- sloproof\n- deterministic-rollout-policy\n- slack-escalation\ntriggers:\n- type: manual\n  inputs:\n  - name: run_id\n    type: string\n    required: true\n  - name: notify\n    type: boolean\n    default: true\n    description: Send failure or evidence-hold alerts to the configured SLOProof Slack channel. Set false for a silent replay.\nsettings:\n  timeout: 5m\nsteps:\n- name: read_verdict\n  type: elasticsearch.search\n  with:\n    index: sloproof-ledger\n    size: 2\n    track_total_hits: true\n    query:\n      bool:\n        filter:\n        - term:\n            run_id: '{{ inputs.run_id }}'\n        - term:\n            event: verdict\n        - term:\n            actor: deterministic-verifier\n    _source:\n    - run_id\n    - event\n    - actor\n    - verdict\n    - reason\n    - contract_hash\n    - detail.run_id\n    - detail.verdict\n    - detail.reason\n    - detail.contract_hash\n    - detail.verified_at\n    - detail.recovery_assessment\n    - detail.windows.window_start\n    - detail.windows.window_end\n    - detail.windows.requests\n    - detail.windows.success_rate\n    - detail.windows.p95_ms\n    - detail.windows.verdict\n- name: require_recorded_verdict\n  type: if\n  condition: 'steps.read_verdict.output.hits.total.value: 1'\n  steps:\n  - name: read_rollout_policy\n    type: elasticsearch.search\n    with:\n      index: sloproof-ledger\n      size: 2\n      track_total_hits: true\n      query:\n        bool:\n          filter:\n          - term:\n              run_id: '{{ inputs.run_id }}'\n          - term:\n              event: rollout_policy\n          - term:\n              actor: deterministic-rollout-policy\n          - term:\n              contract_hash: '{{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}'\n  - name: require_rollout_policy\n    type: if\n    condition: 'steps.read_rollout_policy.output.hits.total.value: 1 and steps.read_rollout_policy.output.hits.hits.0._source.detail.source_verdict_id: \"{{ steps.read_verdict.output.hits.hits[0]._id }}\" and steps.read_rollout_policy.output.hits.hits.0._source.detail.recorded_verdict: \"{{ steps.read_verdict.output.hits.hits[0]._source.verdict }}\"'\n    steps:\n    - name: rollout_outcome\n      type: if\n      condition: 'steps.read_verdict.output.hits.hits.0._source.verdict: \"PROVED\" and (steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"CONTINUE_PLAN\" or steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"PLAN_COMPLETE\")'\n      steps:\n      - name: continue_planned_rollout\n        type: console\n        with:\n          message: 'Policy {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}. The rollout runner owns the guarded execution. This console step does not move traffic.'\n      else:\n      - name: failed_recovery\n        type: if\n        condition: 'steps.read_verdict.output.hits.hits.0._source.verdict: \"FAILED\"'\n        steps:\n        - name: pause_rollout\n          type: console\n          with:\n            message: 'PAUSE_AND_INVESTIGATE: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}'\n        - name: notify_failed_rollout\n          type: slack_api.postMessage\n          connector-id: sloproof-slack-alerts\n          if: 'inputs.notify: true'\n          with:\n            channelNames:\n            - '#all-on-call-engineering-team'\n            text: 'SLOProof rollout PAUSED \u2014 recorded trial {{ inputs.run_id }}. Signal: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}. Candidate verdict: FAILED. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} Window comparisons: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.window_comparisons | json }}. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: {{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. This alert reviews recorded generated-traffic evidence.'\n        else:\n        - name: hold_rollout\n          type: console\n          with:\n            message: 'HOLD: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}'\n        - name: notify_inconclusive_rollout\n          type: slack_api.postMessage\n          connector-id: sloproof-slack-alerts\n          if: 'inputs.notify: true'\n          with:\n            channelNames:\n            - '#all-on-call-engineering-team'\n            text: 'SLOProof rollout HELD \u2014 recorded trial {{ inputs.run_id }}. Verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} No expansion or blind rollback. Evidence retry policy: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.evidence_retry | json }}. Budget exhausted: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.retry_budget_exhausted }}. Temporary delays are reverified by the read-only runner against the same frozen windows, at most twice within 120 seconds. Missing receipts, changed config, underpowered completed cohorts and invalid evidence require repair and a new trial. Workflow replay never refreshes the retry budget or reruns a route patch. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. Recorded generated-traffic evidence.'\n    - name: investigate_if_measured\n      type: if\n      condition: 'steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *'\n      steps:\n      - name: investigate\n        type: ai.agent\n        agent-id: sloproof_investigator\n        with:\n          message: Investigate run {{ inputs.run_id }} using sloproof_window_metrics and sloproof_evidence_completeness for window_start {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_start }} inclusive and window_end {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_end }} exclusive. Cite the tool IDs and input parameters. This is a review of a completed trial. Recommend operator next steps only.\n        on-failure:\n          continue: true\n      else:\n      - name: no_observation_window\n        type: console\n        with:\n          message: No recorded observation window exists. Skip metric interpretation; explain the missing evidence.\n    - name: explain_recorded_verdict\n      type: ai.agent\n      agent-id: sloproof_verifier\n      with:\n        message: 'Explain the existing deterministic verdict for run {{ inputs.run_id }}. Call sloproof_recorded_verdict to retrieve it independently. Here is the recorded decision and its bounded windows: {{ steps.read_verdict.output.hits.hits[0]._source | json }} Copy its verdict exactly; do not issue a new verdict. Explain the reason, scope, and next operator decision. No routing has changed.'\n      on-failure:\n        continue: true\n    - name: recorded_result\n      type: console\n      with:\n        message: 'Recorded Go verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. Run: {{ inputs.run_id }}. Rollout policy: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}. This workflow did not change traffic. The operator-started rollout runner executes only a fresh, adjacent, verified stage; AI output cannot authorize it.'\n    else:\n    - name: missing_rollout_policy\n      type: console\n      with:\n        message: 'REVIEW_BLOCKED: missing or inconsistent deterministic rollout policy. No agent, notification or routing action is authorized. Record policy with scripts/control.sh policy before review.'\n  else:\n  - name: missing_or_ambiguous_verdict\n    type: console\n    with:\n      message: 'REVIEW_BLOCKED for run {{ inputs.run_id }}: expected exactly one deterministic verdict, found {{ steps.read_verdict.output.hits.total.value }}. No agent was called and no verdict or routing action was produced.'\n",
+    "context": {
+      "inputs": {
+        "run_id": "demo-slow-20260918-02",
+        "notify": true
+      }
+    },
+    "status": "completed",
+    "createdAt": "2026-09-18T09:34:47.277Z",
+    "triggeredBy": "manual",
+    "version": 12,
+    "scopeStack": [],
+    "currentNodeId": "exitCondition_require_recorded_verdict",
+    "startedAt": "2026-09-18T09:34:49.027Z",
+    "stepExecutionIds": [
+      "c80b06a52d1668c56e21a5d51ae69a5894bcc5852c1f36d7c91da5d1e12e8cee",
+      "766a50cb74fcaa7705f9154ef61d185bd0d836bec920199bd6b0b7b62ad10d04",
+      "afde3fac1ba0fe6bd4eea16467add2d401523edfd7c06fb5ec174246527a5f02",
+      "419dbf20c96b5dfb0633a530730eeacc1b3d51cc0066fe3a76b91474cfedb183",
+      "860730939ee564d568b05d78339b08779ba76467ee948b437eb6129d0b957288",
+      "2746fdd3be23b92a83a4283367c78ba9a173f2e132fa01f00391108d60779c5c",
+      "b9f6b84851549bdf8d63098552984289011bdb267788da04e6454659e182ade1",
+      "0aefc1bdb8eb8a4418546f67e42451a53f95619bb2335b65f2d6f0d3a8701df0",
+      "1bd33682f04521a42ab1e9bd9580bb439759f5f67d1b1645820ce5444de34726",
+      "bae981597d9f59fadc4e8c1a16529a630b248932b9e08416ca96821f67ebdb36",
+      "f1bba99005c5c851022545575386df3ac9d149336a9c44c88ce55156493690a4",
+      "bfdec4e51a9456044ad0e3b8cfc55f7b8377f3a1d8f0140fca47130fa219c0b3",
+      "af810ad76838733dd504ecaa9124f090b62847108320a5362d9b619ed8edb5ad"
+    ],
+    "usage": {
+      "cachedTokens": 15318,
+      "inputTokens": 35045,
+      "outputTokens": 1699,
+      "totalTokens": 36744
+    },
+    "stepUsage": [
+      {
+        "cachedTokens": 8001,
+        "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+        "stepId": "investigate",
+        "inputTokens": 19660,
+        "outputTokens": 1319,
+        "totalTokens": 20979
+      },
+      {
+        "cachedTokens": 7317,
+        "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+        "stepId": "explain_recorded_verdict",
+        "inputTokens": 15385,
+        "outputTokens": 380,
+        "totalTokens": 15765
+      }
+    ],
+    "duration": 36074,
+    "finishedAt": "2026-09-18T09:35:25.101Z",
+    "isTestRun": false,
+    "stepExecutions": [
+      {
+        "id": "c80b06a52d1668c56e21a5d51ae69a5894bcc5852c1f36d7c91da5d1e12e8cee",
+        "stepId": "read_verdict",
+        "stepType": "elasticsearch.search",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 1,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:49.203Z",
+        "globalExecutionIndex": 0,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T09:34:49.208Z",
+        "executionTimeMs": 5,
+        "input": {
+          "track_total_hits": true,
+          "query": {
+            "bool": {
+              "filter": [
+                {
+                  "term": {
+                    "run_id": "demo-slow-20260918-02"
+                  }
+                },
+                {
+                  "term": {
+                    "event": "verdict"
+                  }
+                },
+                {
+                  "term": {
+                    "actor": "deterministic-verifier"
+                  }
+                }
+              ]
+            }
+          },
+          "size": 2,
+          "_source": [
+            "run_id",
+            "event",
+            "actor",
+            "verdict",
+            "reason",
+            "contract_hash",
+            "detail.run_id",
+            "detail.verdict",
+            "detail.reason",
+            "detail.contract_hash",
+            "detail.verified_at",
+            "detail.recovery_assessment",
+            "detail.windows.window_start",
+            "detail.windows.window_end",
+            "detail.windows.requests",
+            "detail.windows.success_rate",
+            "detail.windows.p95_ms",
+            "detail.windows.verdict"
+          ],
+          "index": "sloproof-ledger"
+        },
+        "output": {
+          "took": 1,
+          "timed_out": false,
+          "_shards": {
+            "total": 6,
+            "successful": 6,
+            "skipped": 0,
+            "failed": 0
+          },
+          "hits": {
+            "total": {
+              "value": 1,
+              "relation": "eq"
+            },
+            "max_score": 0,
+            "hits": [
+              {
+                "_index": "sloproof-ledger-v1-20260918t071814z",
+                "_id": "0aa2301e22be1afcd3c627c2f4482862",
+                "_score": 0,
+                "_source": {
+                  "actor": "deterministic-verifier",
+                  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                  "detail": {
+                    "run_id": "demo-slow-20260918-02",
+                    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                    "verdict": "FAILED",
+                    "reason": "measured SLO breach",
+                    "verified_at": "2026-09-18T08:21:50.376012Z",
+                    "windows": [
+                      {
+                        "window_start": "2026-09-18T08:16:55.99Z",
+                        "window_end": "2026-09-18T08:17:55.99Z",
+                        "verdict": "FAILED",
+                        "requests": 600,
+                        "success_rate": 1,
+                        "p95_ms": 507.5396
+                      },
+                      {
+                        "window_start": "2026-09-18T08:17:55.99Z",
+                        "window_end": "2026-09-18T08:18:55.99Z",
+                        "verdict": "FAILED",
+                        "requests": 601,
+                        "success_rate": 1,
+                        "p95_ms": 507.694
+                      },
+                      {
+                        "window_start": "2026-09-18T08:18:55.99Z",
+                        "window_end": "2026-09-18T08:19:55.99Z",
+                        "verdict": "FAILED",
+                        "requests": 599,
+                        "success_rate": 1,
+                        "p95_ms": 507.6235
+                      }
+                    ],
+                    "recovery_assessment": {
+                      "incident_status": "OPEN",
+                      "promotion_gate": "BLOCKED",
+                      "routing_action": "NO_AUTOMATIC_CHANGE",
+                      "explanation": "The candidate does not meet the recovery contract. It may still improve on the incident version. Routing remains unchanged; an operator must choose the next mitigation. This verdict does not order a return to the previous version.",
+                      "scope": "OBSERVED_TRIAL_ONLY"
+                    }
+                  },
+                  "event": "verdict",
+                  "reason": "measured SLO breach",
+                  "run_id": "demo-slow-20260918-02",
+                  "verdict": "FAILED"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "766a50cb74fcaa7705f9154ef61d185bd0d836bec920199bd6b0b7b62ad10d04",
+        "stepId": "require_recorded_verdict",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 2,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:49.487Z",
+        "globalExecutionIndex": 1,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.total.value: 1",
+          "condition": "steps.read_verdict.output.hits.total.value: 1",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 35028,
+        "finishedAt": "2026-09-18T09:35:24.515Z"
+      },
+      {
+        "id": "afde3fac1ba0fe6bd4eea16467add2d401523edfd7c06fb5ec174246527a5f02",
+        "stepId": "read_rollout_policy",
+        "stepType": "elasticsearch.search",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 4,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:49.791Z",
+        "globalExecutionIndex": 2,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T09:34:49.795Z",
+        "executionTimeMs": 4,
+        "input": {
+          "track_total_hits": true,
+          "query": {
+            "bool": {
+              "filter": [
+                {
+                  "term": {
+                    "run_id": "demo-slow-20260918-02"
+                  }
+                },
+                {
+                  "term": {
+                    "event": "rollout_policy"
+                  }
+                },
+                {
+                  "term": {
+                    "actor": "deterministic-rollout-policy"
+                  }
+                },
+                {
+                  "term": {
+                    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f"
+                  }
+                }
+              ]
+            }
+          },
+          "size": 2,
+          "index": "sloproof-ledger"
+        },
+        "output": {
+          "took": 1,
+          "timed_out": false,
+          "_shards": {
+            "total": 6,
+            "successful": 6,
+            "skipped": 0,
+            "failed": 0
+          },
+          "hits": {
+            "total": {
+              "value": 1,
+              "relation": "eq"
+            },
+            "max_score": 0,
+            "hits": [
+              {
+                "_index": "sloproof-ledger-v1-20260918t071814z",
+                "_id": "demo-slow-20260918-02.rollout-policy",
+                "_score": 0,
+                "_source": {
+                  "@timestamp": "2026-09-18T09:34:43.693472Z",
+                  "actor": "deterministic-rollout-policy",
+                  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                  "detail": {
+                    "run_id": "demo-slow-20260918-02",
+                    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                    "source_verdict_id": "0aa2301e22be1afcd3c627c2f4482862",
+                    "source_verified_at": "2026-09-18T08:21:50.376012Z",
+                    "recorded_verdict": "FAILED",
+                    "action": "PAUSE_AND_INVESTIGATE",
+                    "signal": "BOTH_VERSIONS_BREACH",
+                    "explanation": "Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target.",
+                    "execution": "POLICY_ONLY_NO_ROUTING_PERFORMED",
+                    "candidate_weight_plan": [
+                      10,
+                      25,
+                      50,
+                      100
+                    ],
+                    "current_candidate_weight": 10,
+                    "both_versions_unhealthy": true,
+                    "shared_cause_proven": false,
+                    "window_comparisons": [
+                      {
+                        "window_index": 0,
+                        "window_start": "2026-09-18T08:16:55.99Z",
+                        "window_end": "2026-09-18T08:17:55.99Z",
+                        "candidate_p95_ms": 507.5396,
+                        "candidate_success_rate": 1,
+                        "original_p95_ms": 857.6078,
+                        "original_success_rate": 0.8001111522786217,
+                        "original_window_outcome": "FAILED"
+                      },
+                      {
+                        "window_index": 1,
+                        "window_start": "2026-09-18T08:17:55.99Z",
+                        "window_end": "2026-09-18T08:18:55.99Z",
+                        "candidate_p95_ms": 507.694,
+                        "candidate_success_rate": 1,
+                        "original_p95_ms": 857.6461999999999,
+                        "original_success_rate": 0.7999629561029821,
+                        "original_window_outcome": "FAILED"
+                      },
+                      {
+                        "window_index": 2,
+                        "window_start": "2026-09-18T08:18:55.99Z",
+                        "window_end": "2026-09-18T08:19:55.99Z",
+                        "candidate_p95_ms": 507.6235,
+                        "candidate_success_rate": 1,
+                        "original_p95_ms": 857.609,
+                        "original_success_rate": 0.8000370301795964,
+                        "original_window_outcome": "FAILED"
+                      }
+                    ],
+                    "evidence_retry": {
+                      "allowed": false,
+                      "delay_seconds": 30,
+                      "max_additional_attempts": 2,
+                      "same_frozen_windows": true,
+                      "reason": "A conclusive result is never retried to search for a better outcome."
+                    },
+                    "retry_budget_exhausted": false
+                  },
+                  "event": "rollout_policy",
+                  "reason": "BOTH_VERSIONS_BREACH",
+                  "run_id": "demo-slow-20260918-02",
+                  "verdict": "FAILED"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "419dbf20c96b5dfb0633a530730eeacc1b3d51cc0066fe3a76b91474cfedb183",
+        "stepId": "require_rollout_policy",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 5,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:50.095Z",
+        "globalExecutionIndex": 3,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_rollout_policy.output.hits.total.value: 1 and steps.read_rollout_policy.output.hits.hits.0._source.detail.source_verdict_id: \"{{ steps.read_verdict.output.hits.hits[0]._id }}\" and steps.read_rollout_policy.output.hits.hits.0._source.detail.recorded_verdict: \"{{ steps.read_verdict.output.hits.hits[0]._source.verdict }}\"",
+          "condition": "steps.read_rollout_policy.output.hits.total.value: 1 and steps.read_rollout_policy.output.hits.hits.0._source.detail.source_verdict_id: \"0aa2301e22be1afcd3c627c2f4482862\" and steps.read_rollout_policy.output.hits.hits.0._source.detail.recorded_verdict: \"FAILED\"",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 34125,
+        "finishedAt": "2026-09-18T09:35:24.220Z"
+      },
+      {
+        "id": "860730939ee564d568b05d78339b08779ba76467ee948b437eb6129d0b957288",
+        "stepId": "rollout_outcome",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 7,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:50.394Z",
+        "globalExecutionIndex": 4,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": false
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"PROVED\" and (steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"CONTINUE_PLAN\" or steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"PLAN_COMPLETE\")",
+          "condition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"PROVED\" and (steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"CONTINUE_PLAN\" or steps.read_rollout_policy.output.hits.hits.0._source.detail.action: \"PLAN_COMPLETE\")",
+          "conditionResult": false
+        },
+        "output": {},
+        "executionTimeMs": 2208,
+        "finishedAt": "2026-09-18T09:34:52.602Z"
+      },
+      {
+        "id": "2746fdd3be23b92a83a4283367c78ba9a173f2e132fa01f00391108d60779c5c",
+        "stepId": "failed_recovery",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "rollout_outcome",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_rollout_outcome",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterElse_rollout_outcome",
+                "nodeType": "enter-else-branch",
+                "scopeId": "false"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 12,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:50.596Z",
+        "globalExecutionIndex": 5,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"FAILED\"",
+          "condition": "steps.read_verdict.output.hits.hits.0._source.verdict: \"FAILED\"",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 1699,
+        "finishedAt": "2026-09-18T09:34:52.295Z"
+      },
+      {
+        "id": "b9f6b84851549bdf8d63098552984289011bdb267788da04e6454659e182ade1",
+        "stepId": "pause_rollout",
+        "stepType": "console",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "rollout_outcome",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_rollout_outcome",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterElse_rollout_outcome",
+                "nodeType": "enter-else-branch",
+                "scopeId": "false"
+              }
+            ]
+          },
+          {
+            "stepId": "failed_recovery",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_failed_recovery",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_failed_recovery",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 14,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:50.893Z",
+        "globalExecutionIndex": 6,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T09:34:50.893Z",
+        "executionTimeMs": 0,
+        "input": {
+          "message": "PAUSE_AND_INVESTIGATE: Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target."
+        },
+        "output": "PAUSE_AND_INVESTIGATE: Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target."
+      },
+      {
+        "id": "0aefc1bdb8eb8a4418546f67e42451a53f95619bb2335b65f2d6f0d3a8701df0",
+        "stepId": "if_notify_failed_rollout",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "rollout_outcome",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_rollout_outcome",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterElse_rollout_outcome",
+                "nodeType": "enter-else-branch",
+                "scopeId": "false"
+              }
+            ]
+          },
+          {
+            "stepId": "failed_recovery",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_failed_recovery",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_failed_recovery",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 15,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:51.197Z",
+        "globalExecutionIndex": 7,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "inputs.notify: true",
+          "condition": "inputs.notify: true",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 900,
+        "finishedAt": "2026-09-18T09:34:52.097Z"
+      },
+      {
+        "id": "1bd33682f04521a42ab1e9bd9580bb439759f5f67d1b1645820ce5444de34726",
+        "stepId": "notify_failed_rollout",
+        "stepType": "slack_api.postMessage",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "rollout_outcome",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_rollout_outcome",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterElse_rollout_outcome",
+                "nodeType": "enter-else-branch",
+                "scopeId": "false"
+              }
+            ]
+          },
+          {
+            "stepId": "failed_recovery",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_failed_recovery",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_failed_recovery",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "if_notify_failed_rollout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_if_notify_failed_rollout",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_if_notify_failed_rollout",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 17,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:51.498Z",
+        "globalExecutionIndex": 8,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T09:34:51.788Z",
+        "executionTimeMs": 290,
+        "input": {
+          "channelNames": [
+            "#all-on-call-engineering-team"
+          ],
+          "text": "SLOProof rollout PAUSED \u2014 recorded trial demo-slow-20260918-02. Signal: BOTH_VERSIONS_BREACH. Candidate verdict: FAILED. Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target. Window comparisons: [{\"window_index\":0,\"window_start\":\"2026-09-18T08:16:55.99Z\",\"window_end\":\"2026-09-18T08:17:55.99Z\",\"candidate_p95_ms\":507.5396,\"candidate_success_rate\":1,\"original_p95_ms\":857.6078,\"original_success_rate\":0.8001111522786217,\"original_window_outcome\":\"FAILED\"},{\"window_index\":1,\"window_start\":\"2026-09-18T08:17:55.99Z\",\"window_end\":\"2026-09-18T08:18:55.99Z\",\"candidate_p95_ms\":507.694,\"candidate_success_rate\":1,\"original_p95_ms\":857.6461999999999,\"original_success_rate\":0.7999629561029821,\"original_window_outcome\":\"FAILED\"},{\"window_index\":2,\"window_start\":\"2026-09-18T08:18:55.99Z\",\"window_end\":\"2026-09-18T08:19:55.99Z\",\"candidate_p95_ms\":507.6235,\"candidate_success_rate\":1,\"original_p95_ms\":857.609,\"original_success_rate\":0.8000370301795964,\"original_window_outcome\":\"FAILED\"}]. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f. Source verifier time: 2026-09-18T08:21:50.376012Z. This alert reviews recorded generated-traffic evidence."
+        },
+        "output": {
+          "ok": true,
+          "channel": "C0C2RMCBKN2",
+          "ts": "1789724091.666839",
+          "message": {
+            "user": "U0C2TJFNCV8",
+            "type": "message",
+            "ts": "1789724091.666839",
+            "bot_id": "B0C2VK6HYKB",
+            "app_id": "A0C2C9MF79D",
+            "text": "SLOProof rollout PAUSED \u2014 recorded trial demo-slow-20260918-02. Signal: BOTH_VERSIONS_BREACH. Candidate verdict: FAILED. Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target. Window comparisons: [{\"window_index\":0,\"window_start\":\"2026-09-18T08:16:55.99Z\",\"window_end\":\"2026-09-18T08:17:55.99Z\",\"candidate_p95_ms\":507.5396,\"candidate_success_rate\":1,\"original_p95_ms\":857.6078,\"original_success_rate\":0.8001111522786217,\"original_window_outcome\":\"FAILED\"},{\"window_index\":1,\"window_start\":\"2026-09-18T08:17:55.99Z\",\"window_end\":\"2026-09-18T08:18:55.99Z\",\"candidate_p95_ms\":507.694,\"candidate_success_rate\":1,\"original_p95_ms\":857.6461999999999,\"original_success_rate\":0.7999629561029821,\"original_window_outcome\":\"FAILED\"},{\"window_index\":2,\"window_start\":\"2026-09-18T08:18:55.99Z\",\"window_end\":\"2026-09-18T08:19:55.99Z\",\"candidate_p95_ms\":507.6235,\"candidate_success_rate\":1,\"original_p95_ms\":857.609,\"original_success_rate\":0.8000370301795964,\"original_window_outcome\":\"FAILED\"}]. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f. Source verifier time: 2026-09-18T08:21:50.376012Z. This alert reviews recorded generated-traffic evidence.",
+            "team": "T0C2NPN8ZBP",
+            "bot_profile": {
+              "id": "B0C2VK6HYKB",
+              "app_id": "A0C2C9MF79D",
+              "user_id": "U0C2TJFNCV8",
+              "name": "Elastic-Alerts",
+              "icons": {
+                "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+                "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+                "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+              },
+              "deleted": false,
+              "updated": 1789719213,
+              "team_id": "T0C2NPN8ZBP"
+            },
+            "blocks": [
+              {
+                "type": "rich_text",
+                "block_id": "cz=S",
+                "elements": [
+                  {
+                    "type": "rich_text_section",
+                    "elements": [
+                      {
+                        "type": "text",
+                        "text": "SLOProof rollout PAUSED \u2014 recorded trial demo-slow-20260918-02. Signal: BOTH_VERSIONS_BREACH. Candidate verdict: FAILED. Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target. Window comparisons: [{\"window_index\":0,\"window_start\":\"2026-09-18T08:16:55.99Z\",\"window_end\":\"2026-09-18T08:17:55.99Z\",\"candidate_p95_ms\":507.5396,\"candidate_success_rate\":1,\"original_p95_ms\":857.6078,\"original_success_rate\":0.8001111522786217,\"original_window_outcome\":\"FAILED\"},{\"window_index\":1,\"window_start\":\"2026-09-18T08:17:55.99Z\",\"window_end\":\"2026-09-18T08:18:55.99Z\",\"candidate_p95_ms\":507.694,\"candidate_success_rate\":1,\"original_p95_ms\":857.6461999999999,\"original_success_rate\":0.7999629561029821,\"original_window_outcome\":\"FAILED\"},{\"window_index\":2,\"window_start\":\"2026-09-18T08:18:55.99Z\",\"window_end\":\"2026-09-18T08:19:55.99Z\",\"candidate_p95_ms\":507.6235,\"candidate_success_rate\":1,\"original_p95_ms\":857.609,\"original_success_rate\":0.8000370301795964,\"original_window_outcome\":\"FAILED\"}]. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f. Source verifier time: 2026-09-18T08:21:50.376012Z. This alert reviews recorded generated-traffic evidence."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "bae981597d9f59fadc4e8c1a16529a630b248932b9e08416ca96821f67ebdb36",
+        "stepId": "investigate_if_measured",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 32,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:52.895Z",
+        "globalExecutionIndex": 9,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+          "condition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 19232,
+        "finishedAt": "2026-09-18T09:35:12.127Z"
+      },
+      {
+        "id": "f1bba99005c5c851022545575386df3ac9d149336a9c44c88ce55156493690a4",
+        "stepId": "investigate",
+        "stepType": "ai.agent",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "investigate_if_measured",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_investigate_if_measured",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_investigate_if_measured",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "investigate",
+            "nestedScopes": [
+              {
+                "nodeId": "enterContinue_investigate",
+                "nodeType": "enter-continue"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 35,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:34:53.202Z",
+        "globalExecutionIndex": 10,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "input": {
+          "message": "Investigate run demo-slow-20260918-02 using sloproof_window_metrics and sloproof_evidence_completeness for window_start 2026-09-18T08:16:55.99Z inclusive and window_end 2026-09-18T08:17:55.99Z exclusive. Cite the tool IDs and input parameters. This is a review of a completed trial. Recommend operator next steps only."
+        },
+        "output": {
+          "metadata": {
+            "usage": {
+              "cachedTokens": 8001,
+              "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+              "inputTokens": 19660,
+              "outputTokens": 1319,
+              "totalTokens": 20979
+            }
+          },
+          "message": "## Findings \u2014 run `demo-slow-20260918-02`, window `2026-09-18T08:16:55.99Z`\u2013`2026-09-18T08:17:55.99Z`\n\n**Tool calls:**\n- `sloproof_window_metrics` (tool_result_id `VeEAsx`)\n- `sloproof_evidence_completeness` (tool_result_id `8hQ3uh`)\n- Params for both: `run_id=demo-slow-20260918-02`, `window_start=2026-09-18T08:16:55.99Z`, `window_end=2026-09-18T08:17:55.99Z`\n\n**Per-version metrics (this window only):**\n\n| Version | Requests | Successes | Success rate | p50 (ms) | p95 (ms) | config_hashes | meets_min_samples (\u2265400) |\n|---|---|---|---|---|---|---|---|\n| v1 (candidate) | 600 | 600 | 100% | 499.76 | 507.54 | 1 | true |\n| v2 (incident) | 5398 | 4319 | 80.01% | 850.29 | 857.61 | 1 | true |\n\n**Comparison against contract (success \u226599%, p95 <300ms, \u2265400 v1 samples per window, across three 60s windows):**\n- Sample size: v1 has 600 samples in this window, satisfying the \u2265400 minimum for this single window. Evidence is not missing here.\n- Success rate: v1 is 100% (meets \u226599%); v2 is 80.01% (fails).\n- Latency: v1 p95 is 507.54 ms \u2014 **fails** the <300 ms bar despite being much better than v2's 857.61 ms. v2 also fails p95.\n- Config integrity: both versions show a single config_hash in this window, so no mid-window behavior change is indicated.\n\n**Important scope note:** the contract requires evidence across **three** 60-second windows, not one. This is a single window only \u2014 it cannot determine a trial-wide result on its own, and no additional windows were queried in this request.\n\n**Interpretation (not a verdict):** In this one window, v1 clearly outperforms v2 on both success rate and latency, but v1's p95 (507.54 ms) exceeds the strict <300 ms threshold, so this window alone would not satisfy the full contract even though sample-count evidence is adequate here.\n\n**Recommended operator next steps:**\n1. Pull the other two required 60-second windows for `demo-slow-20260918-02` using the same tools to complete the three-window evidence set before drawing any trial-level conclusion.\n2. Flag the p95 latency gap (v1 at 507.54 ms vs. the 300 ms bar) for review \u2014 this is the binding constraint on v1 in this window, not success rate.\n3. Do not treat this single-window result as sufficient for a PROVED or FAILED determination; route to the full verifier once all three windows are assembled.\n4. No routing or reversal action is implied by this data \u2014 v2 remains in place pending the complete evidence review."
+        },
+        "usage": {
+          "cachedTokens": 8001,
+          "inputTokens": 19660,
+          "outputTokens": 1319,
+          "totalTokens": 20979
+        },
+        "executionTimeMs": 18615,
+        "finishedAt": "2026-09-18T09:35:11.817Z"
+      },
+      {
+        "id": "bfdec4e51a9456044ad0e3b8cfc55f7b8377f3a1d8f0140fca47130fa219c0b3",
+        "stepId": "explain_recorded_verdict",
+        "stepType": "ai.agent",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "explain_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterContinue_explain_recorded_verdict",
+                "nodeType": "enter-continue"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 43,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:35:12.367Z",
+        "globalExecutionIndex": 11,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "input": {
+          "message": "Explain the existing deterministic verdict for run demo-slow-20260918-02. Call sloproof_recorded_verdict to retrieve it independently. Here is the recorded decision and its bounded windows: {\"actor\":\"deterministic-verifier\",\"contract_hash\":\"dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f\",\"detail\":{\"run_id\":\"demo-slow-20260918-02\",\"contract_hash\":\"dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f\",\"verdict\":\"FAILED\",\"reason\":\"measured SLO breach\",\"verified_at\":\"2026-09-18T08:21:50.376012Z\",\"windows\":[{\"window_start\":\"2026-09-18T08:16:55.99Z\",\"window_end\":\"2026-09-18T08:17:55.99Z\",\"verdict\":\"FAILED\",\"requests\":600,\"success_rate\":1,\"p95_ms\":507.5396},{\"window_start\":\"2026-09-18T08:17:55.99Z\",\"window_end\":\"2026-09-18T08:18:55.99Z\",\"verdict\":\"FAILED\",\"requests\":601,\"success_rate\":1,\"p95_ms\":507.694},{\"window_start\":\"2026-09-18T08:18:55.99Z\",\"window_end\":\"2026-09-18T08:19:55.99Z\",\"verdict\":\"FAILED\",\"requests\":599,\"success_rate\":1,\"p95_ms\":507.6235}],\"recovery_assessment\":{\"incident_status\":\"OPEN\",\"promotion_gate\":\"BLOCKED\",\"routing_action\":\"NO_AUTOMATIC_CHANGE\",\"explanation\":\"The candidate does not meet the recovery contract. It may still improve on the incident version. Routing remains unchanged; an operator must choose the next mitigation. This verdict does not order a return to the previous version.\",\"scope\":\"OBSERVED_TRIAL_ONLY\"}},\"event\":\"verdict\",\"reason\":\"measured SLO breach\",\"run_id\":\"demo-slow-20260918-02\",\"verdict\":\"FAILED\"} Copy its verdict exactly; do not issue a new verdict. Explain the reason, scope, and next operator decision. No routing has changed."
+        },
+        "output": {
+          "metadata": {
+            "usage": {
+              "cachedTokens": 7317,
+              "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+              "inputTokens": 15385,
+              "outputTokens": 380,
+              "totalTokens": 15765
+            }
+          },
+          "message": "The recorded verdict for run demo-slow-20260918-02 is **FAILED**, due to \"measured SLO breach\" \u2014 this decision was produced by the deterministic Go verifier, not by me, confirmed by an independent lookup returning exactly one row. Across the three recorded windows (08:16:55.99\u201308:19:55.99Z, ~600 requests each, 100% success rate), p95 latency held near 507.5\u2013507.7ms, breaching the latency contract despite zero failed requests, and the assessment scope is OBSERVED_TRIAL_ONLY (this observed trial, not full-load recovery). Per the recovery assessment, incident_status remains OPEN, the promotion_gate is BLOCKED, and routing_action is NO_AUTOMATIC_CHANGE \u2014 no routing has changed, and an operator must decide the next mitigation step."
+        },
+        "usage": {
+          "cachedTokens": 7317,
+          "inputTokens": 15385,
+          "outputTokens": 380,
+          "totalTokens": 15765
+        },
+        "executionTimeMs": 11295,
+        "finishedAt": "2026-09-18T09:35:23.662Z"
+      },
+      {
+        "id": "af810ad76838733dd504ecaa9124f090b62847108320a5362d9b619ed8edb5ad",
+        "stepId": "recorded_result",
+        "stepType": "console",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "require_rollout_policy",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_rollout_policy",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_rollout_policy",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 45,
+        "status": "completed",
+        "startedAt": "2026-09-18T09:35:23.969Z",
+        "globalExecutionIndex": 12,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "c92b3b29-0470-4121-b2b2-c20d07856658",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T09:35:23.969Z",
+        "executionTimeMs": 0,
+        "input": {
+          "message": "Recorded Go verdict: FAILED. Run: demo-slow-20260918-02. Rollout policy: PAUSE_AND_INVESTIGATE. This workflow did not change traffic. The operator-started rollout runner executes only a fresh, adjacent, verified stage; AI output cannot authorize it."
+        },
+        "output": "Recorded Go verdict: FAILED. Run: demo-slow-20260918-02. Rollout policy: PAUSE_AND_INVESTIGATE. This workflow did not change traffic. The operator-started rollout runner executes only a fresh, adjacent, verified stage; AI output cannot authorize it."
+      }
+    ]
+  }
+}

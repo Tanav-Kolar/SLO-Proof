@@ -5,9 +5,11 @@ import datetime
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
 import sys
+import subprocess
 
 import yaml
 
@@ -15,6 +17,17 @@ from kibana_client import Client, ROOT
 
 WORKFLOW_ID = 'sloproof-loop'
 WORKFLOW = ROOT / 'elastic/workflows/sloproof-loop.yaml'
+WORKFLOW_INPUTS = [
+    {'name': 'run_id', 'type': 'string', 'required': True},
+    {'name': 'notify', 'type': 'boolean', 'default': True,
+     'description': 'Send failure or evidence-hold alerts to the configured SLOProof Slack channel. Set false for a silent replay.'},
+]
+POLICY_FIELD = 'steps.read_rollout_policy.output.hits.hits.0._source.detail'
+POLICY_GATE = ('steps.read_rollout_policy.output.hits.total.value: 1 and '
+    + POLICY_FIELD + '.source_verdict_id: "{{ steps.read_verdict.output.hits.hits[0]._id }}" and '
+    + POLICY_FIELD + '.recorded_verdict: "{{ steps.read_verdict.output.hits.hits[0]._source.verdict }}"')
+CONTINUE_GATE = ('steps.read_verdict.output.hits.hits.0._source.verdict: "PROVED" and ('
+    + POLICY_FIELD + '.action: "CONTINUE_PLAN" or ' + POLICY_FIELD + '.action: "PLAN_COMPLETE")')
 
 
 def now():
@@ -41,7 +54,7 @@ def require(condition, message):
 
 
 def validate(tools, agents, workflow):
-    """Fail before deployment if these assets acquire an execution/write path."""
+    """Allow only deterministic outcome branches and the requested Slack alerts."""
     allowed_tools = {'sloproof_window_metrics', 'sloproof_evidence_completeness', 'sloproof_recorded_verdict'}
     require({t['id'] for t in tools} == allowed_tools, 'Unexpected tool set')
     for tool in tools:
@@ -62,22 +75,55 @@ def validate(tools, agents, workflow):
         used = {t for group in cfg['tools'] for t in group['tool_ids']}
         require(bool(used) and used <= allowed_tools, 'Agent has an unreviewed tool')
     require([t['type'] for t in workflow['triggers']] == ['manual'], 'Review must remain manually triggered')
-    require(workflow['triggers'][0].get('inputs') == [{'name': 'run_id', 'type': 'string', 'required': True}], 'Workflow must accept only a run ID')
+    require(workflow['triggers'][0].get('inputs') == WORKFLOW_INPUTS, 'Only run ID and explicit notification mode are allowed')
     fetch = workflow['steps'][0]
     require(fetch['name'] == 'read_verdict' and fetch['type'] == 'elasticsearch.search', 'First step must retrieve the recorded decision')
     expected_filters = [{'term': {'run_id': '{{ inputs.run_id }}'}}, {'term': {'event': 'verdict'}}, {'term': {'actor': 'deterministic-verifier'}}]
     require(fetch['with']['index'] == 'sloproof-ledger' and fetch['with']['query'] == {'bool': {'filter': expected_filters}}, 'Decision lookup lost its provenance filters')
     gate = workflow['steps'][1]
     require(gate['name'] == 'require_recorded_verdict' and gate['type'] == 'if' and gate['condition'] == 'steps.read_verdict.output.hits.total.value: 1', 'Exactly one recorded decision is required')
-    def inspect(steps, *, gated=False):
+    lookup, policy_gate = gate['steps']
+    policy_filters = [*expected_filters[:1], {'term': {'event': 'rollout_policy'}},
+        {'term': {'actor': 'deterministic-rollout-policy'}},
+        {'term': {'contract_hash': '{{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}'}}]
+    require(lookup == {'name': 'read_rollout_policy', 'type': 'elasticsearch.search', 'with': {
+        'index': 'sloproof-ledger', 'size': 2, 'track_total_hits': True,
+        'query': {'bool': {'filter': policy_filters}}}}, 'Rollout policy lookup lost provenance checks')
+    require(policy_gate['name'] == 'require_rollout_policy' and policy_gate['type'] == 'if'
+        and policy_gate['condition'] == POLICY_GATE, 'Policy must match the unique source decision')
+    outcome = policy_gate['steps'][0]
+    require(outcome['name'] == 'rollout_outcome' and outcome['type'] == 'if'
+        and outcome['condition'] == CONTINUE_GATE, 'Only a PROVED deterministic policy may continue')
+    failed = outcome['else'][0]
+    require(failed['name'] == 'failed_recovery' and failed['condition'] == 'steps.read_verdict.output.hits.hits.0._source.verdict: "FAILED"', 'Failure branch must use the Go verdict')
+    names = set()
+    notifications = set()
+    def inspect(steps, *, gated=False, policy=False, ancestors=()):
         for step in steps:
-            require(step['type'] in {'elasticsearch.search', 'if', 'ai.agent', 'console'}, 'Workflow contains an execution or write step')
-            require('connector-id' not in step and 'on-failure' not in step, 'Review must not call connectors or bypass failed reads')
+            require(step['name'] not in names, 'Duplicate step name')
+            names.add(step['name'])
+            require(step['type'] in {'elasticsearch.search', 'if', 'ai.agent', 'console', 'slack_api.postMessage'}, 'Workflow contains an execution or write step')
+            if 'on-failure' in step:
+                require(step['type'] == 'ai.agent' and step['on-failure'] == {'continue': True}, 'Operational reads and notification failures must remain visible')
+            if step['type'] == 'elasticsearch.search':
+                require(step['name'] in {'read_verdict', 'read_rollout_policy'}, 'Unexpected query outside the reviewed evidence reads')
             if step['type'] == 'ai.agent':
-                require(gated and step['agent-id'] in agent_ids, 'Ungated or unknown agent')
-            inspect(step.get('steps', []), gated=gated or step['name'] == 'require_recorded_verdict')
-            inspect(step.get('else', []), gated=gated)
+                require(gated and policy and step['agent-id'] in agent_ids, 'Ungated or unknown agent')
+            if step['type'] == 'slack_api.postMessage':
+                require(gated and policy and 'failed_recovery' in ancestors, 'Ungated notification')
+                require(step['name'] in {'notify_failed_rollout', 'notify_inconclusive_rollout'}, 'Unexpected notification')
+                require(step.get('connector-id') == 'sloproof-slack-alerts' and step.get('if') == 'inputs.notify: true', 'Slack identity or explicit notification mode changed')
+                require(step['with'].get('channelNames') == ['#all-on-call-engineering-team'] and set(step['with']) == {'channelNames','text'}, 'Unreviewed notification destination')
+                require('steps.investigate.' not in step['with']['text'] and 'steps.explain_recorded_verdict.' not in step['with']['text'], 'AI prose cannot control the operational alert')
+                notifications.add(step['name'])
+            else:
+                require('connector-id' not in step, 'Only the declared Slack alert may call a connector')
+            if step['type'] == 'if':
+                require('steps.investigate.' not in step['condition'] and 'steps.explain_recorded_verdict.' not in step['condition'], 'AI output cannot control a branch')
+            inspect(step.get('steps', []), gated=gated or step['name'] == 'require_recorded_verdict', policy=policy or step['name'] == 'require_rollout_policy', ancestors=ancestors+(step['name'],))
+            inspect(step.get('else', []), gated=gated, policy=policy, ancestors=ancestors+(step['name'],))
     inspect(workflow['steps'])
+    require(notifications == {'notify_failed_rollout', 'notify_inconclusive_rollout'}, 'Both operational hold branches need an explicit alert')
 
 
 def definitions():
@@ -121,9 +167,10 @@ def install(client):
     receipt = {'installed_at': now(), 'workflow_id': WORKFLOW_ID, 'workflow_valid': True, 'manual_only': True,
                'workflow_sha256': hashlib.sha256(WORKFLOW.read_bytes()).hexdigest(), 'assets': applied,
                'routing_or_notification_connectors_called': False,
-               'credential_scope': 'Kibana caller identity; read-only tools and steps, not a separately scoped verifier credential'}
+               'notifications_configured': True,
+               'credential_scope': 'Kibana workflow identity; read-only agent tools and configured Slack connector, separate from the scoped Go verifier'}
     save(ROOT / 'evidence/elastic-integration-install.json', receipt)
-    print('Installed 3 agents, 3 read-only tools, and the manual review workflow; no routing or notification actions')
+    print('Installed 3 agents, 3 read-only tools, and deterministic rollout branches with Slack alerts. Installation sent no messages or routing actions.')
 
 
 def validate_run(run_id):
@@ -192,18 +239,37 @@ def review_path(run_id, attempt):
     return ROOT / 'evidence' / (run_id + suffix + '-elastic-review.json')
 
 
-def run(client, run_id, attempt):
+def publish_policy(client, run_id, doc_id, verdict):
+    require(bool(os.environ.get('ELASTIC_CONTROLLER_API_KEY')), 'Scoped controller key is required to record deterministic rollout policy')
+    env = {name: os.environ[name] for name in ('PATH','HOME','ELASTIC_CLOUD_ENDPOINT','ELASTIC_CONTROLLER_API_KEY')}
+    result = subprocess.run(['scripts/control.sh','policy','--run-id',run_id], cwd=ROOT, env=env,
+                            capture_output=True, text=True, timeout=90)
+    require(result.returncode == 0, 'Rollout policy could not be recorded; inspect scripts/control.sh policy locally')
+    decision = json.loads(result.stdout)
+    require(decision['source_verdict_id'] == doc_id and decision['recorded_verdict'] == verdict['verdict']
+            and decision['contract_hash'] == verdict['contract_hash'], 'Rollout policy source mismatch')
+    path = ROOT / 'evidence' / (run_id+'-rollout-policy.json')
+    if path.exists():
+        require(json.loads(path.read_text()) == decision, 'Saved rollout policy differs; refusing replacement')
+    else:
+        save(path, decision, exclusive=True)
+    return decision
+
+
+def run(client, run_id, attempt, notify=True):
     definitions()
     path = review_path(run_id, attempt)
     require(not path.exists(), 'Review artifact already exists; use collect or a new --attempt')
     doc_id, verdict = recorded_decision(client, run_id)
+    decision = publish_policy(client, run_id, doc_id, verdict)
     live = client.request('GET', '/api/workflows/workflow/' + WORKFLOW_ID)
     require(live.get('valid') and live.get('enabled') and yaml.safe_load(live['yaml']) == yaml.safe_load(WORKFLOW.read_text()), 'Remote workflow is disabled, invalid, or differs from reviewed source')
-    started = client.request('POST', '/api/workflows/workflow/' + WORKFLOW_ID + '/run', {'inputs': {'run_id': run_id}})
+    started = client.request('POST', '/api/workflows/workflow/' + WORKFLOW_ID + '/run', {'inputs': {'run_id': run_id, 'notify': notify}})
     artifact = {'run_id': run_id, 'attempt': attempt, 'started_at': now(), 'workflow_id': WORKFLOW_ID,
                 'execution_id': started['workflowExecutionId'], 'source_document_id': doc_id,
                 'recorded_verdict': verdict['verdict'], 'contract_hash': verdict['contract_hash'],
-                'scope': 'Post-verification review; AI does not decide or route traffic', 'status': 'started',
+                'scope': 'Post-verification rollout policy and optional Slack escalation; AI does not decide or route traffic', 'status': 'started',
+                'rollout_policy': decision, 'notifications_enabled': notify,
                 'workflow_sha256': hashlib.sha256(WORKFLOW.read_bytes()).hexdigest()}
     save(path, artifact, exclusive=True)
     print(json.dumps({'run_id': run_id, 'execution_id': artifact['execution_id'], 'artifact': str(path.relative_to(ROOT))}))
@@ -274,10 +340,12 @@ def main():
             p.add_argument('--attempt', type=int, default=1)
         if command == 'ask':
             p.add_argument('question')
+        if command == 'run':
+            p.add_argument('--no-notify', action='store_true', help='Replay the branches without sending Slack messages')
     args = parser.parse_args()
     definitions()
     if args.command == 'validate':
-        print('Definitions validated: bounded queries, recorded-decision gate, and no write/routing/notification steps')
+        print('Definitions validated: bounded read-only agents, matched deterministic policy, no routing steps, and scoped Slack alert branches')
         return 0
     client = Client()
     if args.command == 'install':
@@ -285,7 +353,7 @@ def main():
     elif args.command == 'check':
         check(client, args.run_id)
     elif args.command == 'run':
-        run(client, args.run_id, args.attempt)
+        run(client, args.run_id, args.attempt, notify=not args.no_notify)
     elif args.command == 'collect':
         return collect(client, args.run_id, args.attempt)
     else:

@@ -1,9 +1,9 @@
 {
-  "installed_at": "2026-09-18T08:46:42.451533+00:00",
+  "installed_at": "2026-09-18T09:33:58.130575+00:00",
   "workflow_id": "sloproof-loop",
   "workflow_valid": true,
   "manual_only": true,
-  "workflow_sha256": "d2d82035c1f6d85cd5f193e5fb30ca88e144cf7150dd84329d04fb6f716bc495",
+  "workflow_sha256": "39d31a4cdf955e061989473fa810a138f7ee8ce94d2becde448c6c4e1f3d8927",
   "assets": [
     {
       "kind": "tools",
@@ -23,7 +23,7 @@
     {
       "kind": "agents",
       "id": "sloproof_briefer",
-      "operation": "created"
+      "operation": "updated"
     },
     {
       "kind": "agents",
@@ -37,5 +37,6 @@
     }
   ],
   "routing_or_notification_connectors_called": false,
-  "credential_scope": "Kibana caller identity; read-only tools and steps, not a separately scoped verifier credential"
+  "notifications_configured": true,
+  "credential_scope": "Kibana workflow identity; read-only agent tools and configured Slack connector, separate from the scoped Go verifier"
 }

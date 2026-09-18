@@ -11,6 +11,18 @@ From the repository or extracted bundle root, open
 cloud credentials. It shows saved EKS trial results and later native Elastic
 Workflow reviews; it is not a live monitor.
 
+After revealing a result, **Next step / Slack** shows its deterministic rollout
+policy and the actual notification receipt. The passing case permits the next
+stage of a 10/25/50/100% plan; failed recovery pauses and alerts; inconclusive
+evidence is held for bounded rechecking or repair. See
+[the three cases and validation limits](../docs/ROLLOUT_CASES.md). The retained
+trials do not include live 25/50/100% executions.
+
+Open `process.html` for a stage-by-stage product walkthrough: frozen contract,
+bounded trial, observation windows, deterministic verification, advisory AI
+explanation, and operator review. It uses the same embedded evidence and keeps
+queries, receipts, logs, and raw JSON behind expandable details.
+
 Ask the audience to predict the verdict. Candidate A has 100% success but
 ~508 ms p95: reveal FAILED, then open the saved Elastic explanation. Candidate B
 meets the same frozen contract at ~57 ms: reveal PROVED for the observed trial.

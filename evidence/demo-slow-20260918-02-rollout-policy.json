@@ -1,0 +1,60 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "source_verdict_id": "0aa2301e22be1afcd3c627c2f4482862",
+  "source_verified_at": "2026-09-18T08:21:50.376012Z",
+  "recorded_verdict": "FAILED",
+  "action": "PAUSE_AND_INVESTIGATE",
+  "signal": "BOTH_VERSIONS_BREACH",
+  "explanation": "Both candidate and original breach the contract in the recorded windows. Pause expansion and investigate common dependencies, infrastructure and configuration. A shared cause is a hypothesis, not a proven diagnosis; a relative improvement does not meet the absolute target.",
+  "execution": "POLICY_ONLY_NO_ROUTING_PERFORMED",
+  "candidate_weight_plan": [
+    10,
+    25,
+    50,
+    100
+  ],
+  "current_candidate_weight": 10,
+  "both_versions_unhealthy": true,
+  "shared_cause_proven": false,
+  "window_comparisons": [
+    {
+      "window_index": 0,
+      "window_start": "2026-09-18T08:16:55.99Z",
+      "window_end": "2026-09-18T08:17:55.99Z",
+      "candidate_p95_ms": 507.5396,
+      "candidate_success_rate": 1,
+      "original_p95_ms": 857.6078,
+      "original_success_rate": 0.8001111522786217,
+      "original_window_outcome": "FAILED"
+    },
+    {
+      "window_index": 1,
+      "window_start": "2026-09-18T08:17:55.99Z",
+      "window_end": "2026-09-18T08:18:55.99Z",
+      "candidate_p95_ms": 507.694,
+      "candidate_success_rate": 1,
+      "original_p95_ms": 857.6461999999999,
+      "original_success_rate": 0.7999629561029821,
+      "original_window_outcome": "FAILED"
+    },
+    {
+      "window_index": 2,
+      "window_start": "2026-09-18T08:18:55.99Z",
+      "window_end": "2026-09-18T08:19:55.99Z",
+      "candidate_p95_ms": 507.6235,
+      "candidate_success_rate": 1,
+      "original_p95_ms": 857.609,
+      "original_success_rate": 0.8000370301795964,
+      "original_window_outcome": "FAILED"
+    }
+  ],
+  "evidence_retry": {
+    "allowed": false,
+    "delay_seconds": 30,
+    "max_additional_attempts": 2,
+    "same_frozen_windows": true,
+    "reason": "A conclusive result is never retried to search for a better outcome."
+  },
+  "retry_budget_exhausted": false
+}

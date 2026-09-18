@@ -1,0 +1,29 @@
+{
+  "run_id": "demo-healthy-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "source_verdict_id": "3fe2d26ae1e4d2f0d4faba387895517e",
+  "source_verified_at": "2026-09-18T08:28:08.548229Z",
+  "recorded_verdict": "PROVED",
+  "action": "CONTINUE_PLAN",
+  "signal": "STAGE_CONTRACT_MET",
+  "explanation": "Continue the operator-started plan from 10% to 25% candidate traffic only after freshness, configuration and route-conflict checks. Freeze and measure a new stage before any further expansion.",
+  "execution": "POLICY_ONLY_NO_ROUTING_PERFORMED",
+  "candidate_weight_plan": [
+    10,
+    25,
+    50,
+    100
+  ],
+  "current_candidate_weight": 10,
+  "next_candidate_weight": 25,
+  "both_versions_unhealthy": false,
+  "shared_cause_proven": false,
+  "evidence_retry": {
+    "allowed": false,
+    "delay_seconds": 30,
+    "max_additional_attempts": 2,
+    "same_frozen_windows": true,
+    "reason": "A conclusive result is never retried to search for a better outcome."
+  },
+  "retry_budget_exhausted": false
+}

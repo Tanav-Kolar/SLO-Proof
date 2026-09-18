@@ -4,11 +4,19 @@ Private team repository for the Elastic Forge the Future Hackathon.
 
 **Use `main` as the canonical demo branch.** See [the branch review](docs/BRANCH_REVIEW.md) for integrated work and deferred experiments.
 
+**Three rollout outcomes:** [continue, pause with Slack, or hold for evidence](docs/ROLLOUT_CASES.md).
+The native workflow branches and failed-recovery Slack delivery are retained;
+fresh later-stage EKS validation is pending renewed AWS authentication.
+
 **Present the decision challenge:** open [`demo/index.html`](demo/index.html)
 and follow the [four-minute showcase script](docs/SHOWCASE_SCRIPT.md). Ask judges
 “Would you ship this recovery?”, then reveal the actual FAILED, PROVED and
 INCONCLUSIVE results. The portable walkthrough includes saved native Elastic
 reviews and inspectable evidence; it needs no credentials.
+
+**Show the complete process:** open [`demo/process.html`](demo/process.html) to
+walk through contract freeze, bounded trial traffic, observation, deterministic
+verification, advisory explanation, and operator review.
 
 For the current demo, start with [the operator runbook](docs/DEMO_RUNBOOK.md),
 [the integrated Elastic agents and workflow](elastic/README.md),

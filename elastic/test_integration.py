@@ -51,6 +51,34 @@ class IntegrationBoundaryTests(unittest.TestCase):
         self.workflow['triggers'].append({'type': 'alerting.ruleEventsGenerated'})
         self.rejects()
 
+    def test_policy_must_match_recorded_verdict(self):
+        self.workflow['steps'][1]['steps'][1]['condition'] = 'steps.read_rollout_policy.output.hits.total.value: 1'
+        self.rejects()
+
+    def test_failed_result_cannot_enter_continue_branch(self):
+        self.workflow['steps'][1]['steps'][1]['steps'][0]['condition'] = 'steps.read_verdict.output.hits.hits.0._source.verdict: "FAILED"'
+        self.rejects()
+
+    def test_slack_destination_cannot_expand(self):
+        alert = self.workflow['steps'][1]['steps'][1]['steps'][0]['else'][0]['steps'][1]
+        alert['with']['channelNames'] = ['#another-channel']
+        self.rejects()
+
+    def test_slack_requires_notification_mode(self):
+        alert = self.workflow['steps'][1]['steps'][1]['steps'][0]['else'][0]['steps'][1]
+        del alert['if']
+        self.rejects()
+
+    def test_failed_notification_cannot_be_silently_ignored(self):
+        alert = self.workflow['steps'][1]['steps'][1]['steps'][0]['else'][0]['steps'][1]
+        alert['on-failure'] = {'continue': True}
+        self.rejects()
+
+    def test_ai_cannot_supply_operational_alert(self):
+        alert = self.workflow['steps'][1]['steps'][1]['steps'][0]['else'][0]['steps'][1]
+        alert['with']['text'] = '{{ steps.investigate.output.message }}'
+        self.rejects()
+
     def test_wrong_actor_rejected(self):
         self.workflow['steps'][0]['with']['query']['bool']['filter'][-1]['term']['actor'] = 'agent'
         self.rejects()

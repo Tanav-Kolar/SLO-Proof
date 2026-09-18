@@ -20,9 +20,14 @@ flowchart LR
   Workflow --> Demo[Recorded evidence page]
 ```
 
-The workflow runs **after** verification. It does not start trials, decide
-verdicts, patch routing, write to the decision ledger, or send notifications.
-Workflow completion is not an SLO pass. Every incident stays open.
+The workflow runs **after** verification. It reads a separate deterministic
+rollout policy, selects continued progression or a hold, and sends configured
+Slack alerts for failed/inconclusive recovery. The operator-started runner owns
+conditional stage execution; neither this workflow nor its agents patch routing
+or issue verifier verdicts. Workflow completion is not an SLO pass.
+
+See [the three rollout cases](../docs/ROLLOUT_CASES.md) for the 10/25/50/100 plan,
+bounded evidence retries, live Slack receipt and remaining EKS validation gap.
 
 ## Directory guide
 
@@ -30,9 +35,9 @@ Workflow completion is not an SLO pass. Every incident stays open.
 |---|---|
 | `agents/` | Active Investigator, Verdict Explainer, and Evidence Briefer. The explainer retains legacy ID `sloproof_verifier`, but never decides verdicts. |
 | `tools/` | Three read-only tools: bounded metrics, bounded completeness, and the recorded verdict. Metric tools use exact canonical query text. |
-| `workflows/sloproof-loop.yaml` | Active manual review. Requires exactly one deterministic decision before invoking agents. |
+| `workflows/sloproof-loop.yaml` | Active manual outcome workflow. Requires one Go verdict and its matching deterministic policy; alerts precede advisory agents. |
 | `rules/` | Disabled error-count signal, updated to client-observed requests. A candidate incident signal, not an SLO verdict; not installed by `manage.py`. |
-| `connectors/` | Restored redacted Lambda and Slack references. Neither is installed or invoked by the active workflow. |
+| `connectors/` | Slack is active for the requested escalation to `#all-on-call-engineering-team`. The Lambda definition remains an unused reference. Secrets stay in Kibana. |
 | `indices/` | Current creation bodies derived from `templates/`; not applied by this integration installer. |
 | `templates/`, `queries/` | Canonical schemas and verifier queries. |
 | `manage.py`, `kibana_client.py` | Installation, checks, workflow execution/collection, and Briefer questions. |
@@ -52,9 +57,9 @@ From the repository root, using the existing ignored `.env`:
 .venv/bin/python elastic/manage.py validate
 .venv/bin/python elastic/manage.py install
 .venv/bin/python elastic/manage.py check demo-slow-20260918-02
-.venv/bin/python elastic/manage.py run demo-slow-20260918-02
+.venv/bin/python elastic/manage.py run demo-slow-20260918-02 --attempt 3 --no-notify
 # Collect after asynchronous completion; exit 2 means not completed:
-.venv/bin/python elastic/manage.py collect demo-slow-20260918-02
+.venv/bin/python elastic/manage.py collect demo-slow-20260918-02 --attempt 3
 python3 scripts/render-evidence.py
 ```
 
@@ -66,6 +71,11 @@ old workflow first. A partial install leaves the old routing prototype disabled.
 when collecting. `collect` checks execution/run identity, workflow hash and the
 source decision. Local and remote verdict artifacts must match.
 
+`run` first records the Go-derived rollout policy using the scoped controller
+key. Native workflow input `notify` defaults to true; use `--no-notify` for a
+silent replay. A replay with notifications enabled can send another real alert.
+The failed-recovery Slack path was exercised and returned `ok: true`.
+
 ```bash
 .venv/bin/python elastic/manage.py ask demo-slow-20260918-02 \
   'Why did this trial fail despite 100% candidate success? Should traffic automatically reverse?'
@@ -75,9 +85,10 @@ The Briefer command supplies the first recorded observation window and retains
 the answer and tool calls. Use `--attempt 2` for another answer. In Kibana, choose
 **SLOProof Evidence Briefer** in Agent Builder and supply the run ID and bounds.
 
-For fresh trials, `SLOPROOF_ELASTIC_REVIEW=1 scripts/run-trial.sh ...` starts the
-review after recording the Go verdict. Collection is asynchronous. A review
-failure cannot change the trial exit code or verdict.
+Fresh trials start the native outcome workflow after recording the Go verdict
+by default. Set `SLOPROOF_ELASTIC_REVIEW=0` to omit it or `SLOPROOF_SLACK=0` to
+replay without messages. Collection is asynchronous. A review failure cannot
+change the trial exit code or verdict.
 
 ## Credentials and models
 

@@ -1,5 +1,12 @@
 # SLOProof: operator-supervised recovery verification
 
+For the latest requested showcase, use [the three rollout cases](ROLLOUT_CASES.md):
+continue a passing staged plan, pause and alert Slack when recovery still fails,
+and hold/recheck or repair inconclusive evidence. The stage runner is locally
+tested; fresh EKS advancement is pending renewed AWS authentication. Retained
+10% trials and all three native outcome branches, including one delivered Slack
+alert, are available now.
+
 ## What this demo can claim
 
 A deterministic, read-only verifier checks client-observed results against a
@@ -97,8 +104,8 @@ python3 scripts/render-evidence.py
 The workflow runs asynchronously; collect after completion. No fresh recovery
 trial is needed to demonstrate this review. `manage.py ask` invokes the Evidence
 Briefer with actual time bounds. This uses Elastic's configured model connector;
-the separately displayed Python agents use Bedrock. There are no routing,
-ledger-write or Slack steps.
+the separately displayed Python agents use Bedrock. The native workflow has no
+routing or ledger-write steps; its configured Slack alerts precede advisory AI.
 
 ## Presentation screen
 

@@ -45,10 +45,21 @@ for run,attempts in sorted(briefings.items()):
  latest['earlier_briefings']=[d['artifact_source'] for d in attempts[:-1]]
  agents.append(latest)
 elastic_reviews=[]
+review_groups={}
 for path in sorted(evidence.glob('*-elastic-review.json')):
  d=json.loads(path.read_text())
  d['artifact_source']='evidence/'+path.name
- elastic_reviews.append(d)
+ review_groups.setdefault(d['run_id'],[]).append(d)
+for run,attempts in sorted(review_groups.items()):
+ attempts.sort(key=lambda d:d.get('attempt',1))
+ latest=attempts[-1]
+ latest['earlier_reviews']=[d['artifact_source'] for d in attempts[:-1]]
+ elastic_reviews.append(latest)
+rollout_policies=[]
+for path in sorted(evidence.glob('*-rollout-policy.json')):
+ d=json.loads(path.read_text())
+ d['artifact_source']='evidence/'+path.name
+ rollout_policies.append(d)
 elastic_answer_groups={}
 for path in sorted(evidence.glob('*-elastic-answer-*.json')):
  d=json.loads(path.read_text())
@@ -61,10 +72,10 @@ for run,attempts in sorted(elastic_answer_groups.items()):
  latest=attempts[-1]
  latest['earlier_answers']=[d['artifact_source'] for d in attempts[:-1]]
  elastic_answers.append(latest)
-payload={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contract':contract,'contract_hash':hashlib.sha256((root/'contracts/checkout-slo.json').read_bytes()).hexdigest(),'measurements':measurements,'verdicts':verdicts,'checks':checks,'agents':agents,'elastic_reviews':elastic_reviews,'elastic_answers':elastic_answers}
+payload={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contract':contract,'contract_hash':hashlib.sha256((root/'contracts/checkout-slo.json').read_bytes()).hexdigest(),'measurements':measurements,'verdicts':verdicts,'checks':checks,'agents':agents,'elastic_reviews':elastic_reviews,'elastic_answers':elastic_answers,'rollout_policies':rollout_policies}
 # Escape HTML-significant characters before embedding JSON in a script node.
 serialized=json.dumps(payload,ensure_ascii=True).replace('&','\\u0026').replace('<','\\u003c').replace('>','\\u003e')
-for source,target in [('evidence-template.html','evidence.html'),('showcase-template.html','index.html')]:
+for source,target in [('evidence-template.html','evidence.html'),('showcase-template.html','index.html'),('process-template.html','process.html')]:
  template=(root/'demo'/source).read_text()
  out=root/'demo'/target
  out.write_text(template.replace('__EVIDENCE_JSON__',serialized))

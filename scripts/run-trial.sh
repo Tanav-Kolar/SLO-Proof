@@ -5,8 +5,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/_guard.sh
-[[ $# == 2 ]] || { echo 'usage: scripts/run-trial.sh healthy|bad-recovery <unique-run-id>' >&2; exit 1; }
+[[ $# == 2 || ( $# == 4 && "$3" == --from-run ) ]] || { echo 'usage: scripts/run-trial.sh healthy|bad-recovery <unique-run-id> [--from-run <proved-stage>]' >&2; exit 1; }
 profile="$1"
+previous="${4:-}"
 case "$profile" in healthy|bad-recovery) ;; *) echo 'Unsupported scenario' >&2; exit 1 ;; esac
 export RUN_ID="$2"
 [[ "$RUN_ID" =~ ^[a-z0-9][a-z0-9-]{0,44}$ ]] || { echo 'Use a lowercase DNS-safe run ID, at most 45 characters' >&2; exit 1; }
@@ -34,9 +35,11 @@ else:raise SystemExit('REFUSING: run ID already has a frozen contract')
 PY
 scripts/setup-executor.sh
 # Scenario setup is an explicit operator action, before the trial is frozen.
-scripts/set-profile.sh v1 "$profile"
-scripts/set-profile.sh v2 checkout-regression
-scripts/set-weights.sh 0 100
+if [[ -z "$previous" ]]; then
+  scripts/set-profile.sh v1 "$profile"
+  scripts/set-profile.sh v2 checkout-regression
+  scripts/set-weights.sh 0 100
+fi
 
 # Query /version on every ready v1 pod through a pinned port-forward. Reject
 # mixed configurations, and preserve real provenance before contract freeze.
@@ -53,7 +56,9 @@ export LOADGEN_JOB="loadgen-${RUN_ID}" DURATION=300s WARMUP=0s RPS=100
 scripts/run-loadgen.sh
 kubectl -n checkout wait --for=condition=Ready pod -l "job-name=$LOADGEN_JOB" --timeout=120s
 scripts/control.sh freeze --run-id "$RUN_ID" --config-hash "$config_hash" > "evidence/$RUN_ID-contract.json"
-if ! scripts/control.sh trial --run-id "$RUN_ID" > "evidence/$RUN_ID-route.json"; then
+action=(trial --run-id "$RUN_ID")
+if [[ -n "$previous" ]]; then action=(advance --run-id "$RUN_ID" --from-run "$previous"); fi
+if ! scripts/control.sh "${action[@]}" > "evidence/$RUN_ID-route.json"; then
   echo 'Trial action refused or failed; no retry. Collecting the Job evidence so the verifier can record the missing receipt.' >&2
 fi
 
@@ -63,7 +68,7 @@ for attempt in $(seq 1 10); do
   if kubectl -n checkout wait --for=condition=complete "job/$LOADGEN_JOB" --timeout=40s; then break; fi
   failed="$(kubectl -n checkout get job "$LOADGEN_JOB" -o jsonpath='{.status.failed}')"
   [[ -z "$failed" || "$failed" == 0 ]] || { echo 'Load generator failed; no automatic route change' >&2; exit 1; }
-  echo 'Still collecting real evidence; routing remains at the trial split.'
+    echo 'Still collecting real evidence; routing remains at this stage split.'
 done
 if ! scripts/control.sh observe --run-id "$RUN_ID" > "evidence/$RUN_ID-effective.json"; then
   echo 'No effective receipt established; verifier must treat the run as INCONCLUSIVE.' >&2
@@ -74,10 +79,12 @@ scripts/verify-run.sh || status=$?
 python3 scripts/render-evidence.py
 # Optional post-verdict Agent Builder review. It cannot alter the trial status;
 # collect its asynchronous execution separately with elastic/manage.py collect.
-if [[ "${SLOPROOF_ELASTIC_REVIEW:-0}" == 1 ]]; then
-  if ! .venv/bin/python elastic/manage.py run "$RUN_ID"; then
+if [[ "${SLOPROOF_ELASTIC_REVIEW:-1}" == 1 ]]; then
+  notification=()
+  if [[ "${SLOPROOF_SLACK:-1}" != 1 ]]; then notification=(--no-notify); fi
+  if ! .venv/bin/python elastic/manage.py run "$RUN_ID" "${notification[@]}"; then
     echo 'Elastic review did not start. The recorded Go verdict remains authoritative; inspect the review error separately.' >&2
   fi
 fi
-printf '\nTrial finished. Routing has NOT been automatically changed. Review the verdict and choose the next operator action.\n'
+printf '\nStage finished. This verdict did not reverse traffic. A passing stage permits the next step of an operator-started rollout plan; failures and inconclusive results stop progression.\n'
 exit "$status"
