@@ -1,0 +1,45 @@
+{
+  "contract_version": "1.0",
+  "service": "checkout",
+  "endpoint": "/checkout",
+  "description": "Acceptance criteria for the checkout recovery trial. Frozen and written to sloproof-contracts BEFORE any routing change. Never edited mid-run; a change mid-run invalidates the trial.",
+
+  "observation": {
+    "window_count": 3,
+    "window_seconds": 60,
+    "overlapping": false,
+    "anchor": "executor_receipt.route_effective_at",
+    "route_convergence_allowance_seconds": 30
+  },
+
+  "eligibility": {
+    "traffic_class": ["ordinary"],
+    "exclude_traffic_class": ["synthetic", "warmup"],
+    "min_samples_per_window": 400
+  },
+
+  "criteria": {
+    "success_rate_min": 0.99,
+    "p95_latency_ms_max": 300,
+    "percentile_method": "tdigest",
+    "timeout_counts_as": "failure",
+    "http_success_statuses": [200]
+  },
+
+  "freshness": {
+    "ingestion_lag_allowance_seconds": 30,
+    "empty_result_is_never_zero_errors": true
+  },
+
+  "verdicts": {
+    "all_windows_pass": "PROVED",
+    "measured_breach": "FAILED",
+    "missing_stale_or_underpowered": "INCONCLUSIVE"
+  },
+
+  "limits": [
+    "Demo acceptance rules, not a statistical guarantee of future production reliability.",
+    "Success and latency only. The four-query contract in the architecture PDF (synthetics, OOM, dependency error rates) is not implemented in this scope.",
+    "Trial success at 10% is not evidence that v1 sustains 100% of traffic; post-promotion windows are measured separately against the same absolute criteria."
+  ]
+}

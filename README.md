@@ -13,6 +13,8 @@ See the [SLOProof demo and service reuse plan](docs/DEMO_AND_SERVICE_REUSE.md) f
 
 See the [service architecture](docs/SERVICE_ARCHITECTURE.md) for the verified capability baseline, plane-by-plane design, credential boundaries, and cluster-isolation requirement.
 
+See the [checkout service spec](docs/CHECKOUT_SERVICE_SPEC.md) for the service's endpoints, fault profiles, configuration layers, and the deploy and demo scripts.
+
 ## Credentials
 
 Do not commit AWS codes, API keys, or connection strings, even though this repository is private. Keep secrets in `.env`.

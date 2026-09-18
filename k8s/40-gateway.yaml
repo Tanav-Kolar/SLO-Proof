@@ -1,0 +1,18 @@
+# gatewayClassName is substituted at deploy time. On EKS this is the class
+# installed by the AWS Load Balancer Controller (Gateway API support, controller
+# 2.14.0+), which provisions the ALB. Verify the controller release supports
+# Gateway API before relying on it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: checkout-gateway
+  namespace: checkout
+  labels: { app.kubernetes.io/part-of: sloproof }
+spec:
+  gatewayClassName: __GATEWAY_CLASS_NAME__
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces: { from: Same }

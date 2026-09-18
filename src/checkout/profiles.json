@@ -1,0 +1,26 @@
+{
+  "healthy": {
+    "description": "Nominal checkout behaviour. p95 sits comfortably under the 300 ms contract threshold.",
+    "base_latency_ms": 40,
+    "base_latency_jitter_ms": 15,
+    "fault_latency_ms": 0,
+    "fault_error_every_n": 0,
+    "fault_error_status": 500
+  },
+  "checkout-regression": {
+    "description": "Incident profile for checkout-v2: adds 800 ms and returns 500 on every 5th request. Health probes stay green so Kubernetes does not evict the failing version.",
+    "base_latency_ms": 40,
+    "base_latency_jitter_ms": 15,
+    "fault_latency_ms": 800,
+    "fault_error_every_n": 5,
+    "fault_error_status": 500
+  },
+  "bad-recovery": {
+    "description": "Latency breach without errors. Applied to checkout-v1 to drive the FAILED verdict run: p95 lands near 500 ms, over the contract threshold, while success rate stays at 100%.",
+    "base_latency_ms": 40,
+    "base_latency_jitter_ms": 15,
+    "fault_latency_ms": 450,
+    "fault_error_every_n": 0,
+    "fault_error_status": 500
+  }
+}

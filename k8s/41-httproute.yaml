@@ -1,0 +1,42 @@
+# Rule order matters and is load-bearing.
+#
+# Rules 0 and 1 are operator-owned pinned routes, selected by the
+# x-sloproof-target header. They exist so synthetic journeys and preflight
+# checks can address one version directly. Traffic sent through them carries
+# x-sloproof-traffic-class: synthetic and is excluded from the weighted-traffic
+# request counts the verifier reads.
+#
+# Rule 2 is ordinary checkout traffic and is the ONLY rule the recovery
+# executor is permitted to modify, and only its backendRef weights.
+# scripts/set-weights.sh locates it by shape rather than by fixed index.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: checkout-route
+  namespace: checkout
+  labels: { app.kubernetes.io/part-of: sloproof }
+spec:
+  parentRefs:
+    - name: checkout-gateway
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: /checkout }
+          headers:
+            - name: x-sloproof-target
+              value: v1
+      backendRefs:
+        - { name: checkout-v1, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /checkout }
+          headers:
+            - name: x-sloproof-target
+              value: v2
+      backendRefs:
+        - { name: checkout-v2, port: 80 }
+    # Ordinary traffic. Starts fully on v1 (healthy baseline); the demo moves it
+    # to v2 to open the incident, then to 90/10 for the recovery trial.
+    - matches:
+        - path: { type: PathPrefix, value: /checkout }
+      backendRefs:
+        - { name: checkout-v1, port: 80, weight: 100 }
+        - { name: checkout-v2, port: 80, weight: 0 }
