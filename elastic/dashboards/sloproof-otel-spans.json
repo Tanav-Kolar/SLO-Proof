@@ -1,0 +1,140 @@
+{
+  "title": "SLOProof OTel Spans (advisory)",
+  "description": "Server-side OpenTelemetry spans from the checkout service. Advisory context only: the deterministic verifier scores client-observed records in sloproof-requests, and its scoped credential is refused on this data with HTTP 403. The two tables are meant to be read together.",
+  "time_range": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "type": "vis",
+      "id": "otel-request-spans",
+      "grid": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "config": {
+        "title": "Request spans",
+        "type": "metric",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM traces-generic.otel-default | WHERE name == \"POST /checkout\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | STATS spans = COUNT()"
+        },
+        "metrics": [{ "type": "primary", "column": "spans" }]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-request-p95",
+      "grid": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "config": {
+        "title": "Request p95 (ms)",
+        "type": "metric",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM traces-generic.otel-default | WHERE name == \"POST /checkout\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | EVAL ms = duration / 1000000.0 | STATS p95_ms = PERCENTILE(ms, 95)"
+        },
+        "metrics": [{ "type": "primary", "column": "p95_ms" }]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-dependency-p95",
+      "grid": { "x": 24, "y": 0, "w": 12, "h": 6 },
+      "config": {
+        "title": "Dependency p95 (ms)",
+        "type": "metric",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM traces-generic.otel-default | WHERE name == \"checkout -> quote\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | EVAL ms = duration / 1000000.0 | STATS p95_ms = PERCENTILE(ms, 95)"
+        },
+        "metrics": [{ "type": "primary", "column": "p95_ms" }]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-error-spans",
+      "grid": { "x": 36, "y": 0, "w": 12, "h": 6 },
+      "config": {
+        "title": "Error spans",
+        "type": "metric",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM traces-generic.otel-default | WHERE name == \"POST /checkout\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | STATS errors = SUM(CASE(status.code == \"Error\", 1, 0))"
+        },
+        "metrics": [{ "type": "primary", "column": "errors" }]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-latency-by-span",
+      "grid": { "x": 0, "y": 6, "w": 24, "h": 14 },
+      "config": {
+        "title": "p95 by span and version — where the latency goes",
+        "type": "xy",
+        "axis": { "x": { "title": { "visible": false } }, "y": { "title": { "visible": false } } },
+        "layers": [
+          {
+            "type": "bar",
+            "data_source": {
+              "type": "esql",
+              "query": "FROM traces-generic.otel-default | WHERE @timestamp > ?_tstart AND @timestamp <= ?_tend | EVAL ms = duration / 1000000.0 | STATS p95_ms = PERCENTILE(ms, 95) BY span = name, version = resource.attributes.service.version | SORT version, span"
+            },
+            "x": { "column": "span" },
+            "y": [{ "column": "p95_ms" }],
+            "breakdown_by": { "column": "version" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-p95-over-time",
+      "grid": { "x": 24, "y": 6, "w": 24, "h": 14 },
+      "config": {
+        "title": "Request p95 over time, by version",
+        "type": "xy",
+        "axis": {
+          "x": { "title": { "visible": false }, "scale": "temporal", "domain": { "type": "fit", "rounding": false } },
+          "y": { "title": { "visible": false } }
+        },
+        "layers": [
+          {
+            "type": "line",
+            "data_source": {
+              "type": "esql",
+              "query": "FROM traces-generic.otel-default | WHERE name == \"POST /checkout\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | EVAL ms = duration / 1000000.0 | STATS p95_ms = PERCENTILE(ms, 95) BY BUCKET(@timestamp, 75, ?_tstart, ?_tend), version = resource.attributes.service.version"
+            },
+            "x": { "column": "BUCKET(@timestamp, 75, ?_tstart, ?_tend)", "label": "@timestamp" },
+            "y": [{ "column": "p95_ms" }],
+            "breakdown_by": { "column": "version" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "otel-span-coverage",
+      "grid": { "x": 0, "y": 20, "w": 24, "h": 12 },
+      "config": {
+        "title": "Server-side OTel spans (advisory)",
+        "type": "data_table",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM traces-generic.otel-default | WHERE name == \"POST /checkout\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | EVAL ms = duration / 1000000.0 | STATS spans = COUNT(), errors = SUM(CASE(status.code == \"Error\", 1, 0)), p95_ms = PERCENTILE(ms, 95) BY run_id = attributes.sloproof.run_id, version = resource.attributes.service.version | SORT spans DESC"
+        },
+        "rows": [{ "column": "run_id" }, { "column": "version" }],
+        "metrics": [{ "column": "spans" }, { "column": "errors" }, { "column": "p95_ms" }]
+      }
+    },
+    {
+      "type": "vis",
+      "id": "client-observed-cohort",
+      "grid": { "x": 24, "y": 20, "w": 24, "h": 12 },
+      "config": {
+        "title": "Client-observed records (the contract evidence)",
+        "type": "data_table",
+        "data_source": {
+          "type": "esql",
+          "query": "FROM sloproof-requests | WHERE traffic_class == \"ordinary\" AND @timestamp > ?_tstart AND @timestamp <= ?_tend | STATS requests = COUNT(*), successes = SUM(CASE(success, 1, 0)), p95_ms = PERCENTILE(duration_ms, 95) BY run_id, version | SORT requests DESC"
+        },
+        "rows": [{ "column": "run_id" }, { "column": "version" }],
+        "metrics": [{ "column": "requests" }, { "column": "successes" }, { "column": "p95_ms" }]
+      }
+    }
+  ]
+}

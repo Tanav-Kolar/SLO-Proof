@@ -126,9 +126,39 @@ exactly where an SLO most needs to see, which is why the verdict uses
 client-observed results and treats an empty result as missing evidence rather
 than as zero errors.
 
-In Kibana, open **Discover** on `traces-generic.otel-default` and filter
-`attributes.sloproof.run_id`. The saved `.esql` files above are the same queries
-in copy-pasteable form.
+### On a dashboard
+
+`elastic/dashboards/sloproof-otel-spans.json` is the saved-object body for the
+**SLOProof OTel Spans (advisory)** dashboard, id `sloproof-otel-spans`. Eight
+ES|QL panels: request/dependency p95 and error counts, p95 split by span and
+version, p95 over time, and the two coverage tables side by side — server-side
+spans on the left, client-observed contract evidence on the right. Reading one
+against the other is the point: cohorts the client saw fail without ever
+reaching an instrumented pod appear in the right-hand table and not the left.
+
+It is created with the Kibana Dashboards API (9.4+; the deployment runs 9.6.0
+serverless). To recreate or update it:
+
+```bash
+.venv/bin/python - <<'EOF'
+import sys, json
+sys.path.insert(0, 'elastic')
+from kibana_client import Client
+body = json.load(open('elastic/dashboards/sloproof-otel-spans.json'))
+Client().request('PUT', '/api/dashboards/sloproof-otel-spans', body)
+EOF
+```
+
+For ad-hoc exploration instead, open **Discover** on
+`traces-generic.otel-default` and filter `attributes.sloproof.run_id`. The saved
+`.esql` files above are the same queries in copy-pasteable form.
+
+The older `sloproof-cases` dashboard predates the corrected architecture. Its
+`Rollback Rate` and `Avg Investigator Confidence` panels read `rolled_back` and
+`confidence`, prototype-era fields that survive on 8 of 46 ledger documents, and
+they present the two ideas this design explicitly rejects: automatic reversal
+and a model's self-reported confidence. Do not show it alongside the current
+demo.
 
 Images built before the run labels were added to the child span carry only
 `sloproof.simulated_dependency` on `checkout -> quote`; the breakdown query
