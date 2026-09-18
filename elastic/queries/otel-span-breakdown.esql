@@ -1,0 +1,32 @@
+// Where the candidate's latency actually comes from, per version.
+//
+// ADVISORY ONLY. These are server-side OpenTelemetry spans emitted by the
+// checkout service itself. They are NOT the contract evidence: the verifier
+// scores client-observed results from sloproof-requests, and its scoped
+// credential is refused (HTTP 403) on this data stream by design.
+//
+// The service emits two spans per request: "POST /checkout" (the request) and
+// "checkout -> quote" (the simulated in-process dependency). Comparing them
+// shows how much of the request is spent in the dependency -- the "why" behind
+// a p95 that the contract can only report as a number.
+//
+// The dependency span is matched by the frozen window plus its own label rather
+// than by run_id, because images built before the run labels were added to the
+// child span carry only sloproof.simulated_dependency. One trial runs at a
+// time, so the frozen window is an adequate advisory scope; it is not a
+// cohort-exact filter and no verdict depends on it.
+//
+// duration is nanoseconds; divide to milliseconds.
+//
+// Params: ?run_id, ?window_start, ?window_end
+FROM traces-generic.otel-default
+| WHERE @timestamp >= ?window_start AND @timestamp < ?window_end
+    AND (attributes.sloproof.run_id == ?run_id
+         OR attributes.sloproof.simulated_dependency == true)
+| EVAL ms = duration / 1000000.0
+| STATS spans  = COUNT(*),
+        errors = SUM(CASE(status.code == "Error", 1, 0)),
+        p50_ms = PERCENTILE(ms, 50),
+        p95_ms = PERCENTILE(ms, 95)
+      BY name, resource.attributes.service.version
+| SORT `resource.attributes.service.version`, name

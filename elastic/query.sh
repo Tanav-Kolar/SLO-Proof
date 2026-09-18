@@ -18,6 +18,15 @@ FILE="elastic/queries/${NAME}.esql"
 
 set -a; source .env; set +a
 KEY="${ELASTIC_VERIFIER_API_KEY:-$ELASTIC_API_KEY}"
+# The verifier credential is scoped to the contract indices and is refused
+# (HTTP 403) on the OpenTelemetry data streams. That separation is deliberate:
+# span data is advisory context, never contract evidence. Advisory queries
+# therefore run under the setup key and say so.
+if [[ "$NAME" == otel-* ]]; then
+  KEY="$ELASTIC_API_KEY"
+  echo "advisory: server-side OTel spans, read with the setup key." >&2
+  echo "          the scoped verifier credential is refused on this data by design." >&2
+fi
 
 python3 - "$FILE" "$ELASTIC_CLOUD_ENDPOINT" "$KEY" "$@" <<'PY'
 import json, sys, urllib.request

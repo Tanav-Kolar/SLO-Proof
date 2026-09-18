@@ -3,12 +3,13 @@
 The Go verifier still issues only PROVED, FAILED or INCONCLUSIVE. A separate
 deterministic rollout policy turns that evidence into an operational next step.
 An operator explicitly starts the rollout plan; no LLM can initiate or authorize
-a traffic change. `sloproof-loop` branches on the recorded policy and sends Slack
-alerts before running advisory agents.
+a traffic change. `sloproof-loop` branches on the recorded policy and sends a
+Slack alert on each of the three outcomes before running advisory agents. The
+passing alert states explicitly that it is not an authorization.
 
 | Case | Action | Guard |
 |---|---|---|
-| Candidate meets the frozen metrics | Continue the fixed **10 → 25 → 50 → 100%** plan | Each adjacent stage needs a fresh PROVED result, unchanged candidate configuration and route, then a new frozen trial and observation windows. |
+| Candidate meets the frozen metrics | Continue the fixed **10 → 25 → 50 → 100%** plan, and alert Slack | Each adjacent stage needs a fresh PROVED result, unchanged candidate configuration and route, then a new frozen trial and observation windows. |
 | Candidate and original both breach | **Pause expansion and alert Slack** | Compare matching windows; investigate common dependencies, infrastructure and configuration. A common cause is a hypothesis, not a diagnosis. Do not automatically return traffic to another unhealthy version. |
 | Evidence is inconclusive | **Hold traffic and resolve uncertainty** | Retry explicit temporary evidence delays only; repair invalid evidence rather than repeatedly executing the intervention. |
 

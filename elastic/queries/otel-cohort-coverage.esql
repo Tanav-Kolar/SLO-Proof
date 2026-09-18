@@ -1,0 +1,22 @@
+// How much of the measured cohort produced a server-side span.
+//
+// ADVISORY ONLY. Run this beside evidence-completeness for the same window and
+// compare the counts. A shortfall is the point: requests rejected before they
+// reach an instrumented pod, and batches the exporter dropped, leave no span.
+// That is why the contract is scored on client-observed results and never on
+// server-side telemetry -- the hardest failures are the least likely to be
+// traced, and missing spans would read as an absence of errors.
+//
+// Params: ?run_id, ?window_start, ?window_end
+FROM traces-generic.otel-default
+| WHERE attributes.sloproof.run_id == ?run_id
+    AND name == "POST /checkout"
+    AND attributes.sloproof.traffic_class == "ordinary"
+    AND @timestamp >= ?window_start AND @timestamp < ?window_end
+| STATS spans        = COUNT(*),
+        errors       = SUM(CASE(status.code == "Error", 1, 0)),
+        config_hashes = COUNT_DISTINCT(attributes.sloproof.config_hash),
+        first_seen   = MIN(@timestamp),
+        last_seen    = MAX(@timestamp)
+      BY resource.attributes.service.version
+| SORT `resource.attributes.service.version`

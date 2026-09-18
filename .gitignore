@@ -39,3 +39,4 @@ build/
 .local-scratch/
 /steering_docs/
 /steering-docs/
+src/checkout/checkout

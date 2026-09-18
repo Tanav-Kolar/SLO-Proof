@@ -21,8 +21,9 @@ flowchart LR
 ```
 
 The workflow runs **after** verification. It reads a separate deterministic
-rollout policy, selects continued progression or a hold, and sends configured
-Slack alerts for failed/inconclusive recovery. The operator-started runner owns
+rollout policy, selects continued progression or a hold, and sends a configured
+Slack alert on every outcome branch: passing stage, failed recovery, and
+insufficient evidence. The operator-started runner owns
 conditional stage execution; neither this workflow nor its agents patch routing
 or issue verifier verdicts. Workflow completion is not an SLO pass.
 
@@ -89,6 +90,49 @@ Fresh trials start the native outcome workflow after recording the Go verdict
 by default. Set `SLOPROOF_ELASTIC_REVIEW=0` to omit it or `SLOPROOF_SLACK=0` to
 replay without messages. Collection is asynchronous. A review failure cannot
 change the trial exit code or verdict.
+
+## Showing the OpenTelemetry spans
+
+The checkout service exports OTLP traces to the same deployment
+(`traces-generic.otel-default`). Two spans per request: `POST /checkout` and the
+simulated `checkout -> quote` dependency, labelled with `sloproof.run_id`,
+`sloproof.traffic_class`, `sloproof.config_hash` and the service version.
+
+This data is **advisory context, not contract evidence**. The verifier's scoped
+credential is refused on it with HTTP 403; only the setup key can read it, and
+`elastic/query.sh` says so whenever an `otel-` query runs.
+
+Show where the latency actually goes — the dependency span accounts for almost
+all of the request:
+
+```bash
+elastic/query.sh otel-span-breakdown run_id=live-bad-recovery-20260918-01 \
+  window_start=2026-09-18T10:02:54.999Z window_end=2026-09-18T10:03:54.999Z
+```
+
+Show why the contract is not scored on spans. Run this beside
+`evidence-completeness` for the same window and compare:
+
+```bash
+elastic/query.sh evidence-completeness run_id=<run> window_start=<start> window_end=<end>
+elastic/query.sh otel-cohort-coverage  run_id=<run> window_start=<start> window_end=<end>
+```
+
+In window 0 of `live-bad-recovery-20260918-01` the client observed 5,817 failed
+requests with no version header. Those requests were rejected before reaching an
+instrumented pod, so they produced **no spans at all**, while the v1 and v2
+cohorts match the client counts exactly. Server-side telemetry is blindest
+exactly where an SLO most needs to see, which is why the verdict uses
+client-observed results and treats an empty result as missing evidence rather
+than as zero errors.
+
+In Kibana, open **Discover** on `traces-generic.otel-default` and filter
+`attributes.sloproof.run_id`. The saved `.esql` files above are the same queries
+in copy-pasteable form.
+
+Images built before the run labels were added to the child span carry only
+`sloproof.simulated_dependency` on `checkout -> quote`; the breakdown query
+matches that case by frozen window, and says so in its header comment.
 
 ## Credentials and models
 

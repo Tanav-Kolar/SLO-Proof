@@ -110,8 +110,10 @@ def validate(tools, agents, workflow):
             if step['type'] == 'ai.agent':
                 require(gated and policy and step['agent-id'] in agent_ids, 'Ungated or unknown agent')
             if step['type'] == 'slack_api.postMessage':
-                require(gated and policy and 'failed_recovery' in ancestors, 'Ungated notification')
-                require(step['name'] in {'notify_failed_rollout', 'notify_inconclusive_rollout'}, 'Unexpected notification')
+                # Every alert stays inside the deterministic outcome branch, so a
+                # notification can only follow a recorded verdict and its matching policy.
+                require(gated and policy and 'rollout_outcome' in ancestors, 'Ungated notification')
+                require(step['name'] in {'notify_continue_rollout', 'notify_failed_rollout', 'notify_inconclusive_rollout'}, 'Unexpected notification')
                 require(step.get('connector-id') == 'sloproof-slack-alerts' and step.get('if') == 'inputs.notify: true', 'Slack identity or explicit notification mode changed')
                 require(step['with'].get('channelNames') == ['#all-on-call-engineering-team'] and set(step['with']) == {'channelNames','text'}, 'Unreviewed notification destination')
                 require('steps.investigate.' not in step['with']['text'] and 'steps.explain_recorded_verdict.' not in step['with']['text'], 'AI prose cannot control the operational alert')
@@ -123,7 +125,8 @@ def validate(tools, agents, workflow):
             inspect(step.get('steps', []), gated=gated or step['name'] == 'require_recorded_verdict', policy=policy or step['name'] == 'require_rollout_policy', ancestors=ancestors+(step['name'],))
             inspect(step.get('else', []), gated=gated, policy=policy, ancestors=ancestors+(step['name'],))
     inspect(workflow['steps'])
-    require(notifications == {'notify_failed_rollout', 'notify_inconclusive_rollout'}, 'Both operational hold branches need an explicit alert')
+    require(notifications == {'notify_continue_rollout', 'notify_failed_rollout', 'notify_inconclusive_rollout'},
+            'Every deterministic outcome branch needs an explicit alert')
 
 
 def definitions():

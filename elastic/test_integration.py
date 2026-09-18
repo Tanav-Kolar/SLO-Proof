@@ -79,6 +79,27 @@ class IntegrationBoundaryTests(unittest.TestCase):
         alert['with']['text'] = '{{ steps.investigate.output.message }}'
         self.rejects()
 
+    def test_every_outcome_branch_alerts(self):
+        names = set()
+        def walk(steps):
+            for step in steps:
+                if step['type'] == 'slack_api.postMessage':
+                    names.add(step['name'])
+                walk(step.get('steps', []))
+                walk(step.get('else', []))
+        walk(self.workflow['steps'])
+        self.assertEqual(names, {'notify_continue_rollout', 'notify_failed_rollout', 'notify_inconclusive_rollout'})
+
+    def test_passing_notification_cannot_be_dropped(self):
+        outcome = self.workflow['steps'][1]['steps'][1]['steps'][0]
+        outcome['steps'] = [s for s in outcome['steps'] if s['name'] != 'notify_continue_rollout']
+        self.rejects()
+
+    def test_passing_alert_cannot_be_ai_prose(self):
+        alert = self.workflow['steps'][1]['steps'][1]['steps'][0]['steps'][1]
+        alert['with']['text'] = '{{ steps.explain_recorded_verdict.output.message }}'
+        self.rejects()
+
     def test_wrong_actor_rejected(self):
         self.workflow['steps'][0]['with']['query']['bool']['filter'][-1]['term']['actor'] = 'agent'
         self.rejects()

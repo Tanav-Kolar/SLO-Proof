@@ -86,6 +86,31 @@ steps:
         type: console
         with:
           message: 'Policy {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}. The rollout runner owns the guarded execution. This console step does not move traffic.'
+      - name: notify_continue_rollout
+        type: slack_api.postMessage
+        connector-id: sloproof-slack-alerts
+        if: 'inputs.notify: true'
+        with:
+          channelNames:
+          - '#all-on-call-engineering-team'
+          text: |-
+            :white_check_mark:  *SLOProof — stage PASSED*
+
+            *Run*  `{{ inputs.run_id }}`
+            *Verdict*  `PROVED`  ·  *Signal*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}`
+            *Policy*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}`
+
+            *Candidate, per frozen 60s window*
+            ```
+            window 1   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].requests }}
+            window 2   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].requests }}
+            window 3   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].requests }}
+            ```
+            {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}
+
+            *No traffic moved by this workflow, and this alert is not an authorization.* The operator-started runner executes the next stage only after a fresh contract freeze, configuration and route-conflict checks, and a new measurement. PROVED covers the observed trial only, not full-load recovery.
+
+            _Contract `{{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}` · verified {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }} · recorded generated-traffic evidence · this alert precedes any AI commentary._
       else:
       - name: failed_recovery
         type: if

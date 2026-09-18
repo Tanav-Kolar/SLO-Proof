@@ -271,7 +271,16 @@ func (s *server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	// quote service in this demo). Label that explicitly: it is not independent
 	// dependency evidence and does not participate in the SLO verdict.
 	_, depSpan := tracer.Start(ctx, "checkout -> quote")
-	depSpan.SetAttributes(attribute.Bool("sloproof.simulated_dependency", true))
+	// Carry the run and version labels onto the dependency span too. Without
+	// them the child span cannot be filtered to a trial cohort, so a latency
+	// breakdown could only be scoped by time and would silently mix runs.
+	depSpan.SetAttributes(
+		attribute.Bool("sloproof.simulated_dependency", true),
+		attribute.String("sloproof.run_id", runID),
+		attribute.String("sloproof.request_id", reqID),
+		attribute.String("sloproof.traffic_class", class),
+		semconv.ServiceVersion(s.cfg.Version),
+	)
 
 	status := http.StatusOK
 	outcome := "success"
