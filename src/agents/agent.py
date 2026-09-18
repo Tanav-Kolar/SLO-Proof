@@ -59,8 +59,8 @@ def cmd_preflight(cfg, args) -> int:
 
     print(f"\nbedrock        region {cfg.region}, default model {cfg.model_id}")
     client = boto3.client("bedrock-runtime", region_name=cfg.region)
-    candidates = [cfg.model_id, "us.amazon.nova-pro-v1:0",
-                  "us.meta.llama3-3-70b-instruct-v1:0", "openai.gpt-oss-120b-1:0",
+    candidates = [cfg.model_id, "openai.gpt-oss-120b-1:0", "us.amazon.nova-pro-v1:0",
+                  "us.meta.llama3-3-70b-instruct-v1:0",
                   "us.anthropic.claude-sonnet-4-6"]
     seen, invokable = set(), []
     for model in candidates:

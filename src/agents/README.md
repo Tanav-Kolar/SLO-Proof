@@ -49,9 +49,19 @@ as working — is **denied** under the credentials now in `.env`:
 `AccessDeniedException`, missing `aws-marketplace:Subscribe`. That earlier probe
 ran under a different credential. Invokable today:
 
-- `us.amazon.nova-pro-v1:0` — the default, supports Converse tool use
+- `openai.gpt-oss-120b-1:0` — **the default**
+- `us.amazon.nova-pro-v1:0` — also supports tool use
 - `us.meta.llama3-3-70b-instruct-v1:0` — also supports tool use
-- `openai.gpt-oss-120b-1:0`
+
+gpt-oss is the default on measured behaviour. Given the `demo-1` trial window,
+Nova recommended reverting to v1 and did not notice that v1's own p95 of 339 ms
+breaches the 300 ms threshold. gpt-oss recommended `hold` and listed all three
+breaches — v1 latency, v2 latency, v2 success rate — which is the D9 finding
+arrived at from the evidence rather than from being told.
+
+It returns a `reasoningContent` block next to the text block. That is handled:
+`text_of` selects blocks containing `text`, so reasoning never reaches output,
+and the tool loop passes the block back unchanged because the model needs it.
 
 Override with `BEDROCK_MODEL_ID`. Run `preflight` before the demo; it probes
 each id rather than assuming, because subscriptions change under you.
@@ -78,7 +88,9 @@ a query, because a judge's question is not known in advance.
 
 Nova sums rows by hand and gets it wrong. Asked for a run total it answered
 35,990 twice in a row, confidently — ten short of the real 36,000 — and telling
-it not to do arithmetic in the system prompt did not stop it. `esql.py` now
+it not to do arithmetic in the system prompt did not stop it. gpt-oss gets the
+same sums right, but the fix stays in place because it is cheap and the next
+model swap should not have to rediscover this. `esql.py` now
 computes `column_totals` for count columns (`requests`, `successes` only; summing
 a rate or a percentile is meaningless) and hands them over, after which both runs
 said 36,000. If you add a query whose counts an agent might total, add its column

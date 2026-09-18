@@ -65,9 +65,20 @@ class Config:
         # Default model is deliberately not a Claude id. The Anthropic models on
         # Bedrock are not subscribed in the account whose credentials are in
         # .env -- Converse returns AccessDeniedException pointing at missing
-        # aws-marketplace:Subscribe. Nova Pro is invokable there today and
-        # supports Converse tool use, which the briefer needs.
-        self.model_id = os.environ.get("BEDROCK_MODEL_ID", "us.amazon.nova-pro-v1:0")
+        # aws-marketplace:Subscribe.
+        #
+        # gpt-oss-120b over Nova Pro on measured behaviour, not preference. On
+        # the demo-1 trial window Nova recommended reverting to v1 and missed
+        # that v1's own p95 of 339 ms breaches the 300 ms threshold; gpt-oss
+        # recommended holding and listed all three breaches, which is the D9
+        # finding surfaced without being told. It also does the briefer's tool
+        # loop correctly.
+        #
+        # It returns a reasoningContent block alongside the text block. That is
+        # handled -- bedrock.py::text_of selects on "text" in block, so the
+        # reasoning is skipped on the way out and passed back intact inside the
+        # tool loop, which the model requires.
+        self.model_id = os.environ.get("BEDROCK_MODEL_ID", "openai.gpt-oss-120b-1:0")
 
     def warn_unscoped(self, stream=sys.stderr) -> None:
         if "UNSCOPED" in self.read_key_source:
