@@ -1,0 +1,18 @@
+# checkout-v1: the known-good version the recovery trial shifts traffic back to.
+# Switch FAULT_PROFILE to "bad-recovery" for showcase run B (rejected trial).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-v1-config
+  namespace: checkout
+  labels: { app: checkout, version: v1, app.kubernetes.io/part-of: sloproof }
+data:
+  SERVICE_NAME: "checkout"
+  SERVICE_VERSION: "v1"
+  FAULT_PROFILE: "healthy"
+  RUN_ID: "__RUN_ID__"
+  IMAGE_DIGEST: "__CHECKOUT_IMAGE__"
+  PORT: "8080"
+  REQUEST_TIMEOUT_MS: "3000"
+  READINESS_DELAY_MS: "2000"
+  SHUTDOWN_GRACE_MS: "5000"

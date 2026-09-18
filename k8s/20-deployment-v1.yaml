@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-v1
+  namespace: checkout
+  labels: { app: checkout, version: v1, app.kubernetes.io/part-of: sloproof }
+spec:
+  # Frozen for the duration of a run. Replica changes during a trial would make
+  # the v1/v2 comparison uninterpretable, and replica counts are not a
+  # substitute for measured request-level routing.
+  replicas: 2
+  selector:
+    matchLabels: { app: checkout, version: v1 }
+  template:
+    metadata:
+      labels: { app: checkout, version: v1, app.kubernetes.io/part-of: sloproof }
+    spec:
+      # Must exceed SHUTDOWN_GRACE_MS plus the server's own shutdown timeout,
+      # or Kubernetes kills the pod mid-drain and manufactures errors.
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: checkout
+          image: __CHECKOUT_IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef: { name: checkout-v1-config }
+          # Tolerant liveness on purpose: an active fault profile must not get
+          # the pod restarted, or the incident disappears before it is measured.
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 2
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: "1", memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }

@@ -1,0 +1,15 @@
+# Two Services with distinct version selectors. A single Service selecting both
+# versions would make the observed traffic split unmeasurable.
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-v1
+  namespace: checkout
+  labels: { app: checkout, version: v1, app.kubernetes.io/part-of: sloproof }
+spec:
+  type: ClusterIP
+  selector: { app: checkout, version: v1 }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

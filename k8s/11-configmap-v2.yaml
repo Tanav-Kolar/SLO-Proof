@@ -1,0 +1,17 @@
+# checkout-v2: the incident version. Starts in the regression profile so the
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-v2-config
+  namespace: checkout
+  labels: { app: checkout, version: v2, app.kubernetes.io/part-of: sloproof }
+data:
+  SERVICE_NAME: "checkout"
+  SERVICE_VERSION: "v2"
+  FAULT_PROFILE: "checkout-regression"
+  RUN_ID: "__RUN_ID__"
+  IMAGE_DIGEST: "__CHECKOUT_IMAGE__"
+  PORT: "8080"
+  REQUEST_TIMEOUT_MS: "3000"
+  READINESS_DELAY_MS: "2000"
+  SHUTDOWN_GRACE_MS: "5000"
