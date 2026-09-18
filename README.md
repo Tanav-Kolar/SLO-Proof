@@ -15,6 +15,8 @@ See the [service architecture](docs/SERVICE_ARCHITECTURE.md) for the verified ca
 
 See the [checkout service spec](docs/CHECKOUT_SERVICE_SPEC.md) for the service's endpoints, fault profiles, configuration layers, and the deploy and demo scripts.
 
+See the [reasoning plane](src/agents/README.md) for the three advisory agents, how to run them, and why they call Bedrock directly instead of going through Agent Builder.
+
 ## Credentials
 
 Do not commit AWS codes, API keys, or connection strings, even though this repository is private. Keep secrets in `.env`.
