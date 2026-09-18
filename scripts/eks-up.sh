@@ -9,6 +9,10 @@ source scripts/_guard.sh
 
 require_cmd aws eksctl kubectl
 
+# eksctl writes the kubeconfig at the end of creation; the directory has to
+# exist before then or a 20-minute create fails on the last step.
+mkdir -p "$(dirname "$KUBECONFIG")"
+
 echo "AWS identity:"
 aws sts get-caller-identity --query 'Arn' --output text
 
@@ -19,7 +23,6 @@ else
   eksctl create cluster -f infra/eks/cluster.yaml --kubeconfig "$KUBECONFIG"
 fi
 
-mkdir -p "$(dirname "$KUBECONFIG")"
 aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION" --kubeconfig "$KUBECONFIG"
 
 CTX="$(kubectl config current-context)"
