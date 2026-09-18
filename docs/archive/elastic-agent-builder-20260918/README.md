@@ -1,5 +1,9 @@
 # Archived Elastic Agent Builder prototype
 
+**Active integration:** corrected agents, tools and a review workflow are now
+maintained under [`elastic/`](../../../elastic/README.md). This directory keeps
+the original export history, rather than the active definitions.
+
 These are source snapshots, not the canonical demo configuration. They preserve
 the export added by commit `654cf895d90c823c3e931a9d2545831eb93de215`, reviewed
 at feature-branch head `87fad88dc3d8a53ffa18667c8febf8996a9e5a43`. The original

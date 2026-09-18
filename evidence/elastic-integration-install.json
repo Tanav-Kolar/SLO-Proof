@@ -1,0 +1,41 @@
+{
+  "installed_at": "2026-09-18T08:46:42.451533+00:00",
+  "workflow_id": "sloproof-loop",
+  "workflow_valid": true,
+  "manual_only": true,
+  "workflow_sha256": "d2d82035c1f6d85cd5f193e5fb30ca88e144cf7150dd84329d04fb6f716bc495",
+  "assets": [
+    {
+      "kind": "tools",
+      "id": "sloproof_evidence_completeness",
+      "operation": "updated"
+    },
+    {
+      "kind": "tools",
+      "id": "sloproof_recorded_verdict",
+      "operation": "updated"
+    },
+    {
+      "kind": "tools",
+      "id": "sloproof_window_metrics",
+      "operation": "updated"
+    },
+    {
+      "kind": "agents",
+      "id": "sloproof_briefer",
+      "operation": "created"
+    },
+    {
+      "kind": "agents",
+      "id": "sloproof_investigator",
+      "operation": "updated"
+    },
+    {
+      "kind": "agents",
+      "id": "sloproof_verifier",
+      "operation": "updated"
+    }
+  ],
+  "routing_or_notification_connectors_called": false,
+  "credential_scope": "Kibana caller identity; read-only tools and steps, not a separately scoped verifier credential"
+}

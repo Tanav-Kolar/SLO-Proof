@@ -80,6 +80,26 @@ python3 scripts/brief-trial.py <run-id>
 This invokes three advisory Bedrock agents after verification. It does not show
 an agent autonomously initiating or executing recovery.
 
+## Elastic Agent Builder and Workflows
+
+Active definitions and commands are under [`elastic/`](../elastic/README.md).
+Show `sloproof-loop` in Kibana Workflows: read the Go verdict, require exactly
+one decision, investigate its bounded evidence, and explain the fixed result.
+An INCONCLUSIVE run without windows skips metrics. A missing decision blocks
+the review before any agent is called.
+
+```bash
+.venv/bin/python elastic/manage.py run demo-slow-20260918-02 --attempt 2
+.venv/bin/python elastic/manage.py collect demo-slow-20260918-02 --attempt 2
+python3 scripts/render-evidence.py
+```
+
+The workflow runs asynchronously; collect after completion. No fresh recovery
+trial is needed to demonstrate this review. `manage.py ask` invokes the Evidence
+Briefer with actual time bounds. This uses Elastic's configured model connector;
+the separately displayed Python agents use Bedrock. There are no routing,
+ledger-write or Slack steps.
+
 ## Presentation screen
 
 ```bash

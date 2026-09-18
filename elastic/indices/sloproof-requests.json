@@ -1,0 +1,53 @@
+{
+  "index": "sloproof-requests",
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "run_id": {
+        "type": "keyword"
+      },
+      "request_id": {
+        "type": "keyword"
+      },
+      "traffic_class": {
+        "type": "keyword"
+      },
+      "service": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "integer"
+      },
+      "outcome": {
+        "type": "keyword"
+      },
+      "success": {
+        "type": "boolean"
+      },
+      "duration_ms": {
+        "type": "double"
+      },
+      "started_at": {
+        "type": "date"
+      },
+      "ended_at": {
+        "type": "date"
+      },
+      "generator_id": {
+        "type": "keyword"
+      },
+      "config_hash": {
+        "type": "keyword"
+      },
+      "target_host": {
+        "type": "keyword"
+      }
+    }
+  }
+}

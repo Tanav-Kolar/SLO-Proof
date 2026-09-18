@@ -1,0 +1,64 @@
+{
+  "index": "sloproof-ledger",
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "run_id": {
+        "type": "keyword"
+      },
+      "event": {
+        "type": "keyword"
+      },
+      "contract_hash": {
+        "type": "keyword"
+      },
+      "actor": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "keyword"
+      },
+      "window_index": {
+        "type": "integer"
+      },
+      "window_start": {
+        "type": "date"
+      },
+      "window_end": {
+        "type": "date"
+      },
+      "observed_count": {
+        "type": "long"
+      },
+      "indexed_count": {
+        "type": "long"
+      },
+      "success_rate": {
+        "type": "double"
+      },
+      "p95_ms": {
+        "type": "double"
+      },
+      "verdict": {
+        "type": "keyword"
+      },
+      "reason": {
+        "type": "keyword"
+      },
+      "esql_query": {
+        "type": "keyword",
+        "index": false
+      },
+      "route_uid": {
+        "type": "keyword"
+      },
+      "detail": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

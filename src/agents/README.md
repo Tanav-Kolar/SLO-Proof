@@ -1,5 +1,12 @@
 # Reasoning plane — three advisory agents
 
+This directory contains the direct Bedrock path. An additional, live Elastic
+Agent Builder and Workflows integration now lives under
+[`elastic/`](../../elastic/README.md). It uses Elastic's configured model connector
+to investigate bounded evidence and explain an existing Go verdict. The earlier
+connector limitation below describes Bedrock through Kibana, not the availability
+of Agent Builder itself.
+
 Three agents, none of them in the decision path:
 
 | Agent | Command | Reads | Writes | Refuses |

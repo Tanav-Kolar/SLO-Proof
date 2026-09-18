@@ -24,6 +24,7 @@ for path in sorted(evidence.glob('*-verdict.json')):
  # Preserve the complete source, including queries, receipts and missing fields.
  v['artifact_source']='evidence/'+path.name
  verdicts.append(v)
+verdicts.sort(key=lambda v:({'FAILED':0,'PROVED':1,'INCONCLUSIVE':2}[v['verdict']],v['run_id']))
 negative=evidence/'verifier-unscoped-refusal.json'
 checks=[]
 if negative.exists():
@@ -43,7 +44,24 @@ for run,attempts in sorted(briefings.items()):
  latest=attempts[-1]
  latest['earlier_briefings']=[d['artifact_source'] for d in attempts[:-1]]
  agents.append(latest)
-payload={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contract':contract,'contract_hash':hashlib.sha256((root/'contracts/checkout-slo.json').read_bytes()).hexdigest(),'measurements':measurements,'verdicts':verdicts,'checks':checks,'agents':agents}
+elastic_reviews=[]
+for path in sorted(evidence.glob('*-elastic-review.json')):
+ d=json.loads(path.read_text())
+ d['artifact_source']='evidence/'+path.name
+ elastic_reviews.append(d)
+elastic_answer_groups={}
+for path in sorted(evidence.glob('*-elastic-answer-*.json')):
+ d=json.loads(path.read_text())
+ d['artifact_source']='evidence/'+path.name
+ d['attempt']=int(path.stem.rsplit('-',1)[1])
+ elastic_answer_groups.setdefault(d['run_id'],[]).append(d)
+elastic_answers=[]
+for run,attempts in sorted(elastic_answer_groups.items()):
+ attempts.sort(key=lambda d:d['attempt'])
+ latest=attempts[-1]
+ latest['earlier_answers']=[d['artifact_source'] for d in attempts[:-1]]
+ elastic_answers.append(latest)
+payload={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contract':contract,'contract_hash':hashlib.sha256((root/'contracts/checkout-slo.json').read_bytes()).hexdigest(),'measurements':measurements,'verdicts':verdicts,'checks':checks,'agents':agents,'elastic_reviews':elastic_reviews,'elastic_answers':elastic_answers}
 # Escape HTML-significant characters before embedding JSON in a script node.
 serialized=json.dumps(payload,ensure_ascii=True).replace('&','\\u0026').replace('<','\\u003c').replace('>','\\u003e')
 template=(root/'demo/evidence-template.html').read_text()

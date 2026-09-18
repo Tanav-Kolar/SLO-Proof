@@ -1,0 +1,278 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "recorded_at": "2026-09-18T08:52:01.177590+00:00",
+  "agent_id": "sloproof_briefer",
+  "input": "Run demo-slow-20260918-02. Use window_start 2026-09-18T08:16:55.99Z inclusive and window_end 2026-09-18T08:17:55.99Z exclusive. The following contract was retrieved from the frozen record and its source SHA256 checked against the recorded decision (dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f): {\"criteria\": {\"success_rate_min\": 0.99, \"p95_latency_ms_max\": 300, \"percentile_method\": \"tdigest\", \"timeout_counts_as\": \"failure\", \"http_success_statuses\": [200]}, \"observation\": {\"window_count\": 3, \"window_seconds\": 60, \"overlapping\": false, \"anchor\": \"executor_receipt.route_effective_at\", \"route_convergence_allowance_seconds\": 30}, \"eligibility\": {\"traffic_class\": [\"ordinary\"], \"exclude_traffic_class\": [\"synthetic\", \"warmup\"], \"min_samples_per_window\": 400}}. The completeness tool checks counts and configuration identities only, not all integrity checks or full-run reconciliation. Answer in at most 180 words. Why is the recovery FAILED despite 100% candidate success, and should we automatically reverse traffic?",
+  "question": "Why is the recovery FAILED despite 100% candidate success, and should we automatically reverse traffic?",
+  "frozen_contract_context": {
+    "criteria": {
+      "success_rate_min": 0.99,
+      "p95_latency_ms_max": 300,
+      "percentile_method": "tdigest",
+      "timeout_counts_as": "failure",
+      "http_success_statuses": [
+        200
+      ]
+    },
+    "observation": {
+      "window_count": 3,
+      "window_seconds": 60,
+      "overlapping": false,
+      "anchor": "executor_receipt.route_effective_at",
+      "route_convergence_allowance_seconds": 30
+    },
+    "eligibility": {
+      "traffic_class": [
+        "ordinary"
+      ],
+      "exclude_traffic_class": [
+        "synthetic",
+        "warmup"
+      ],
+      "min_samples_per_window": 400
+    }
+  },
+  "required_tools_called": true,
+  "response": {
+    "conversation_id": "45b2f555-340f-4ee0-bb04-0b336439f588",
+    "access_control": {
+      "entries": [],
+      "access_mode": "private"
+    },
+    "round_id": "54bbc87a-3aab-4cbf-b850-684617ad2ad8",
+    "trace_id": "db3cf306a571b7b6133ba0da00f3816d",
+    "model_usage": {
+      "llm_calls": 2,
+      "connector_id": ".anthropic-claude-5-sonnet-chat_completion",
+      "output_tokens": 926,
+      "model": "anthropic-claude-5-sonnet",
+      "input_tokens": 22710,
+      "cached_input_tokens": 9137
+    },
+    "started_at": "2026-09-18T08:51:44.675Z",
+    "time_to_last_token": 11897,
+    "steps": [
+      {
+        "tool_call_group_id": "b10c5713-f828-4f2e-a2fc-5349cd49c446",
+        "reasoning": "I'll gather the recorded verdict, window metrics, and evidence completeness for this run and window.",
+        "type": "reasoning"
+      },
+      {
+        "tool_call_group_id": "b10c5713-f828-4f2e-a2fc-5349cd49c446",
+        "tool_type": "esql",
+        "tool_call_id": "toolu_vrtx_01R4ePJoGQLLUDFmxxZEMhUn",
+        "tool_origin": "registry",
+        "tool_id": "sloproof_recorded_verdict",
+        "progression": [],
+        "type": "tool_call",
+        "params": {
+          "run_id": "demo-slow-20260918-02"
+        },
+        "results": [
+          {
+            "data": {
+              "esql": "FROM sloproof-ledger\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND event == \"verdict\"\n      AND actor == \"deterministic-verifier\"\n| KEEP run_id, verdict, reason, contract_hash, @timestamp\n| SORT @timestamp DESC\n| LIMIT 2"
+            },
+            "tool_result_id": "SpLq1o",
+            "type": "query"
+          },
+          {
+            "data": {
+              "columns": [
+                {
+                  "name": "run_id",
+                  "type": "keyword"
+                },
+                {
+                  "name": "verdict",
+                  "type": "keyword"
+                },
+                {
+                  "name": "reason",
+                  "type": "keyword"
+                },
+                {
+                  "name": "contract_hash",
+                  "type": "keyword"
+                },
+                {
+                  "name": "@timestamp",
+                  "type": "date"
+                }
+              ],
+              "query": "FROM sloproof-ledger\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND event == \"verdict\"\n      AND actor == \"deterministic-verifier\"\n| KEEP run_id, verdict, reason, contract_hash, @timestamp\n| SORT @timestamp DESC\n| LIMIT 2",
+              "values": [
+                [
+                  "demo-slow-20260918-02",
+                  "FAILED",
+                  "measured SLO breach",
+                  "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                  "2026-09-18T08:21:51.379Z"
+                ]
+              ],
+              "source": "esql"
+            },
+            "tool_result_id": "JFV3uA",
+            "type": "esql_results"
+          }
+        ]
+      },
+      {
+        "tool_call_group_id": "b10c5713-f828-4f2e-a2fc-5349cd49c446",
+        "tool_type": "esql",
+        "tool_call_id": "toolu_vrtx_01RY9YVkJSJqv1UReGHhPJiS",
+        "tool_origin": "registry",
+        "tool_id": "sloproof_window_metrics",
+        "progression": [],
+        "type": "tool_call",
+        "params": {
+          "run_id": "demo-slow-20260918-02",
+          "window_end": "2026-09-18T08:17:55.99Z",
+          "window_start": "2026-09-18T08:16:55.99Z"
+        },
+        "results": [
+          {
+            "data": {
+              "esql": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), successes = SUM(CASE(success, 1, 0)),\n    p95_ms = PERCENTILE(duration_ms, 95), p50_ms = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::DOUBLE / requests::DOUBLE\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version"
+            },
+            "tool_result_id": "2DSgeV",
+            "type": "query"
+          },
+          {
+            "data": {
+              "columns": [
+                {
+                  "name": "version",
+                  "type": "keyword"
+                },
+                {
+                  "name": "requests",
+                  "type": "long"
+                },
+                {
+                  "name": "successes",
+                  "type": "long"
+                },
+                {
+                  "name": "success_rate",
+                  "type": "double"
+                },
+                {
+                  "name": "p50_ms",
+                  "type": "double"
+                },
+                {
+                  "name": "p95_ms",
+                  "type": "double"
+                }
+              ],
+              "query": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), successes = SUM(CASE(success, 1, 0)),\n    p95_ms = PERCENTILE(duration_ms, 95), p50_ms = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::DOUBLE / requests::DOUBLE\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version",
+              "values": [
+                [
+                  "v1",
+                  600,
+                  600,
+                  1,
+                  499.757,
+                  507.5396
+                ],
+                [
+                  "v2",
+                  5398,
+                  4319,
+                  0.8001111522786217,
+                  850.2855,
+                  857.6078
+                ]
+              ],
+              "source": "esql"
+            },
+            "tool_result_id": "08vWPU",
+            "type": "esql_results"
+          }
+        ]
+      },
+      {
+        "tool_call_group_id": "b10c5713-f828-4f2e-a2fc-5349cd49c446",
+        "tool_type": "esql",
+        "tool_call_id": "toolu_vrtx_016P2pX9S7ThLtSrw5q5PKji",
+        "tool_origin": "registry",
+        "tool_id": "sloproof_evidence_completeness",
+        "progression": [],
+        "type": "tool_call",
+        "params": {
+          "run_id": "demo-slow-20260918-02",
+          "window_end": "2026-09-18T08:17:55.99Z",
+          "window_start": "2026-09-18T08:16:55.99Z"
+        },
+        "results": [
+          {
+            "data": {
+              "esql": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), first_seen = MIN(@timestamp),\n    last_seen = MAX(@timestamp), config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP\n    version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version"
+            },
+            "tool_result_id": "1nqnBs",
+            "type": "query"
+          },
+          {
+            "data": {
+              "columns": [
+                {
+                  "name": "version",
+                  "type": "keyword"
+                },
+                {
+                  "name": "requests",
+                  "type": "long"
+                },
+                {
+                  "name": "meets_min_samples",
+                  "type": "boolean"
+                },
+                {
+                  "name": "config_hashes",
+                  "type": "long"
+                },
+                {
+                  "name": "first_seen",
+                  "type": "date"
+                },
+                {
+                  "name": "last_seen",
+                  "type": "date"
+                }
+              ],
+              "query": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), first_seen = MIN(@timestamp),\n    last_seen = MAX(@timestamp), config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP\n    version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version",
+              "values": [
+                [
+                  "v1",
+                  600,
+                  true,
+                  1,
+                  "2026-09-18T08:16:56.000Z",
+                  "2026-09-18T08:17:55.900Z"
+                ],
+                [
+                  "v2",
+                  5398,
+                  true,
+                  1,
+                  "2026-09-18T08:16:55.990Z",
+                  "2026-09-18T08:17:55.980Z"
+                ]
+              ],
+              "source": "esql"
+            },
+            "tool_result_id": "BRRfGZ",
+            "type": "esql_results"
+          }
+        ]
+      }
+    ],
+    "status": "completed",
+    "time_to_first_token": 7744,
+    "response": {
+      "message": "**Recorded verdict**: FAILED, \"measured SLO breach\" (deterministic-verifier, contract_hash matches: dd9fdf5a...c63f).\n\n**Why FAILED despite 100% success:** The contract requires *both* success_rate \u2265 0.99 AND p95 \u2264 300ms. In this window (v1, run demo-slow-20260918-02, 08:16:55.99Z\u201308:17:55.99Z), v1 had 600 samples, success_rate = 1.0 (meets threshold), but p95 = 507.5ms \u2014 well over the 300ms cap. That single latency breach is sufficient to fail the contract regardless of success rate. Evidence completeness confirms this isn't a data gap: 600 v1 samples (\u2265400 min), 1 config_hash, full window coverage \u2014 a genuine measured breach, not missing telemetry.\n\n**On automatic reversal:** No. Per the observation policy, FAILED does not order reversal to v2, and this is only one 60-second window out of the contract's required 3 non-overlapping windows \u2014 insufficient for a full recovery determination. v2 itself is worse here (80% success, p95\u2248858ms), so reversal isn't clearly beneficial either. This warrants operator review, not automated action.\n\nSources: `sloproof_recorded_verdict`, `sloproof_window_metrics`, `sloproof_evidence_completeness` \u2014 run_id=demo-slow-20260918-02, window 2026-09-18T08:16:55.99Z\u201308:17:55.99Z."
+    }
+  },
+  "scope": "Advisory answer; source verdict unchanged"
+}

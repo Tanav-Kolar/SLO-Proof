@@ -5,6 +5,7 @@ Private team repository for the Elastic Forge the Future Hackathon.
 **Use `main` as the canonical demo branch.** See [the branch review](docs/BRANCH_REVIEW.md) for integrated work and deferred experiments.
 
 For the current demo, start with [the operator runbook](docs/DEMO_RUNBOOK.md),
+[the integrated Elastic agents and workflow](elastic/README.md),
 [the two-hour finish plan](docs/TWO_HOUR_FINISH.md), and
 [the control-plane implementation status](src/control/README.md). Earlier
 architecture notes predate the verifier and in-cluster load-generator work.

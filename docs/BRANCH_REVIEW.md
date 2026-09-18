@@ -1,5 +1,11 @@
 # Canonical demo branch: main
 
+**Subsequent integration:** at the user's request, active Elastic Agent Builder
+definitions and a manual post-verdict workflow now live under
+[`elastic/`](../elastic/README.md). The original exports remain archived. The
+active workflow reads Go verdicts and invokes advisory agents; it does not
+restore LLM verdicts or the Lambda routing path discussed below.
+
 Review on 18 September 2026. Use `main` for the integrated demo. Existing feature
 branches remain available as history; they are not alternative deployment paths.
 

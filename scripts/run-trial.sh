@@ -72,5 +72,12 @@ status=0
 scripts/verify-run.sh || status=$?
 [[ "$status" == 0 || "$status" == 2 ]] || exit "$status"
 python3 scripts/render-evidence.py
+# Optional post-verdict Agent Builder review. It cannot alter the trial status;
+# collect its asynchronous execution separately with elastic/manage.py collect.
+if [[ "${SLOPROOF_ELASTIC_REVIEW:-0}" == 1 ]]; then
+  if ! .venv/bin/python elastic/manage.py run "$RUN_ID"; then
+    echo 'Elastic review did not start. The recorded Go verdict remains authoritative; inspect the review error separately.' >&2
+  fi
+fi
 printf '\nTrial finished. Routing has NOT been automatically changed. Review the verdict and choose the next operator action.\n'
 exit "$status"

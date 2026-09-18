@@ -1,0 +1,19 @@
+{
+  "id": "sloproof_recorded_verdict",
+  "type": "esql",
+  "description": "Read an EXISTING deterministic Go verdict for the exact run. Zero rows means no recorded decision; multiple rows need operator review. Never create or infer a verdict.",
+  "tags": [
+    "sloproof",
+    "read-only",
+    "recorded-decision"
+  ],
+  "configuration": {
+    "query": "FROM sloproof-ledger\n| WHERE run_id == ?run_id AND event == \"verdict\" AND actor == \"deterministic-verifier\"\n| KEEP run_id, verdict, reason, contract_hash, @timestamp\n| SORT @timestamp DESC\n| LIMIT 2",
+    "params": {
+      "run_id": {
+        "type": "string",
+        "description": "Exact unique run ID; never infer a different run"
+      }
+    }
+  }
+}

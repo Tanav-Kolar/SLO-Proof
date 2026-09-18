@@ -91,6 +91,52 @@ briefing is `evidence/demo-slow-20260918-02-attempt-2-agents.json`.
 
 ## Validation and limits
 
+### Subsequent Elastic integration
+
+Active definitions are in [`elastic/`](../elastic/README.md). Native Workflow
+`sloproof-loop` completed with the original Go decisions unchanged:
+
+| Recorded run | Go verdict | Elastic execution ID | Review behavior |
+|---|---|---|---|
+| `demo-slow-20260918-02` | FAILED | `75d29ba0-5c03-43fd-9f0c-0b3033113054` | Retrieved the decision, investigated the first actual window, explained the fixed failure. |
+| `demo-healthy-20260918-01` | PROVED | `95a999fd-72f3-4b40-acbb-fa3ef5ce2e50` | Retrieved the decision, investigated the window, explained trial-only scope. |
+| `demo-slow-20260918-01` | INCONCLUSIVE | `cd0e1ae9-f540-4bfe-99e1-77de1a7951ad` | Skipped metric investigation because no observation windows existed; explained missing execution evidence. |
+| `integration-missing-decision-20260918` | No SLO verdict | `ba6035eb-beed-4642-853b-a02cf00bf86d` | REVIEW_BLOCKED, zero agent calls. This is an actual negative integration check, not a recovery trial. |
+
+Saved `*-elastic-tools.json` responses match the two measured trials' request
+counts, success rates, p95 and recorded decision. The exact canonical metric and
+completeness query text is used, with explicit run and window parameters.
+`*-elastic-review.json` retains workflow steps, actual agent output and source
+decision identity. These are fresh reviews of earlier trial records, not fresh
+traffic trials. No cluster or route change was made during integration.
+
+The first live Briefer answer lacked the actual frozen thresholds in its input
+and overstated the scope of its completeness query. It is retained as answer 1.
+The command now retrieves the frozen contract with the read-only key, verifies
+its source hash/body against the recorded decision, and supplies the exact
+criteria and completeness limits. Later answers remain advisory.
+Answer 2 still described the strict p95 threshold as inclusive and overstated
+coverage. It is retained. Answer 3 includes the explicit strict inequality and
+the limits of the completeness tool; its retrieved counts, rates, p95 and
+recorded verdict match the evidence. The export shows the latest answer and
+lists both earlier artifacts. This inspection is not a guarantee that arbitrary
+future AI answers will be correct.
+
+Agent Builder execution metadata reports Elastic's configured hosted connector;
+the Bedrock Python path remains separate. Kibana uses its caller/workflow
+identity, not the Go verifier's scoped key. Read-only tools and steps constrain
+this integration's interfaces; the earlier 11 key checks do not establish a
+per-agent Kibana credential boundary. The original route-changing workflow was
+replaced by this manual review flow; the disabled rule and redacted connectors
+are configuration references and were not activated or invoked.
+
+### Remaining limits
+
+Thirteen local integration boundary tests pass. Live validation covers three
+recorded verdict reviews, the missing-decision gate with zero agent calls, and
+the three Agent Builder tools against both measured trials. The integrated HTML
+was checked for JavaScript syntax and inspected in the browser.
+
 `go test -race ./...` and `go vet ./...` passed in `src/control`.
 Python compilation and mocked complete/incomplete narrative checks passed.
 There is no automatic promotion, reversal, durable orchestration restart recovery

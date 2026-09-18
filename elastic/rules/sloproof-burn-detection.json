@@ -1,0 +1,29 @@
+{
+  "id": "sloproof-burn-detection",
+  "name": "SLOProof checkout error signal (disabled; operator investigation only)",
+  "rule_type_id": ".es-query",
+  "consumer": "alerts",
+  "schedule": {
+    "interval": "1m"
+  },
+  "enabled": false,
+  "params": {
+    "searchType": "esQuery",
+    "index": [
+      "sloproof-requests"
+    ],
+    "timeField": "@timestamp",
+    "esQuery": "{\"query\": {\"bool\": {\"filter\": [{\"term\": {\"service\": \"checkout\"}}, {\"term\": {\"traffic_class\": \"ordinary\"}}, {\"term\": {\"success\": false}}]}}}",
+    "size": 100,
+    "thresholdComparator": ">",
+    "threshold": [
+      10
+    ],
+    "timeWindowSize": 1,
+    "timeWindowUnit": "m",
+    "aggType": "count",
+    "groupBy": "all",
+    "excludeHitsFromPreviousRun": true
+  },
+  "actions": []
+}

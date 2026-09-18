@@ -1,0 +1,27 @@
+{
+  "id": "sloproof_window_metrics",
+  "type": "esql",
+  "description": "Client-observed success rate and p95 by version for one bounded ordinary-traffic window. Metrics do not issue a recovery verdict.",
+  "tags": [
+    "sloproof",
+    "read-only",
+    "bounded-evidence"
+  ],
+  "configuration": {
+    "query": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE run_id == ?run_id\n    AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start\n    AND @timestamp <  ?window_end\n| STATS requests     = COUNT(*),\n        successes    = SUM(CASE(success, 1, 0)),\n        p95_ms       = PERCENTILE(duration_ms, 95),\n        p50_ms       = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::double / requests::double\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version\n",
+    "params": {
+      "run_id": {
+        "type": "string",
+        "description": "Exact unique run ID; never infer a different run"
+      },
+      "window_start": {
+        "type": "date",
+        "description": "Inclusive UTC start from a recorded verifier window"
+      },
+      "window_end": {
+        "type": "date",
+        "description": "Exclusive UTC end from the same recorded verifier window"
+      }
+    }
+  }
+}

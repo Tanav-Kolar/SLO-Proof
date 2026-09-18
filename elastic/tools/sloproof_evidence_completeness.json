@@ -1,0 +1,27 @@
+{
+  "id": "sloproof_evidence_completeness",
+  "type": "esql",
+  "description": "Sample counts and configuration identities for a bounded trial window. This is not the complete verifier or full-run reconciliation.",
+  "tags": [
+    "sloproof",
+    "read-only",
+    "bounded-evidence"
+  ],
+  "configuration": {
+    "query": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests      = COUNT(*),\n        first_seen    = MIN(@timestamp),\n        last_seen     = MAX(@timestamp),\n        config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version\n",
+    "params": {
+      "run_id": {
+        "type": "string",
+        "description": "Exact unique run ID; never infer a different run"
+      },
+      "window_start": {
+        "type": "date",
+        "description": "Inclusive UTC start from a recorded verifier window"
+      },
+      "window_end": {
+        "type": "date",
+        "description": "Exclusive UTC end from the same recorded verifier window"
+      }
+    }
+  }
+}

@@ -1,0 +1,619 @@
+{
+  "run_id": "demo-healthy-20260918-01",
+  "attempt": 1,
+  "started_at": "2026-09-18T08:47:44.062542+00:00",
+  "workflow_id": "sloproof-loop",
+  "execution_id": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+  "source_document_id": "3fe2d26ae1e4d2f0d4faba387895517e",
+  "recorded_verdict": "PROVED",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "scope": "Post-verification review; AI does not decide or route traffic",
+  "status": "completed",
+  "workflow_sha256": "d2d82035c1f6d85cd5f193e5fb30ca88e144cf7150dd84329d04fb6f716bc495",
+  "collected_at": "2026-09-18T08:48:42.357474+00:00",
+  "execution": {
+    "id": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+    "workflowId": "sloproof-loop",
+    "workflowDefinition": {
+      "version": "1",
+      "name": "sloproof-loop",
+      "description": "Review a recorded deterministic recovery verdict with Elastic Agent Builder. All routing remains operator-controlled.",
+      "settings": {
+        "timeout": "5m"
+      },
+      "enabled": true,
+      "tags": [
+        "sloproof",
+        "recorded-evidence",
+        "advisory"
+      ],
+      "steps": [
+        {
+          "name": "read_verdict",
+          "type": "elasticsearch.search",
+          "with": {
+            "track_total_hits": true,
+            "query": {
+              "bool": {
+                "filter": [
+                  {
+                    "term": {
+                      "run_id": "{{ inputs.run_id }}"
+                    }
+                  },
+                  {
+                    "term": {
+                      "event": "verdict"
+                    }
+                  },
+                  {
+                    "term": {
+                      "actor": "deterministic-verifier"
+                    }
+                  }
+                ]
+              }
+            },
+            "size": 2,
+            "_source": [
+              "run_id",
+              "event",
+              "actor",
+              "verdict",
+              "reason",
+              "contract_hash",
+              "detail.run_id",
+              "detail.verdict",
+              "detail.reason",
+              "detail.contract_hash",
+              "detail.verified_at",
+              "detail.recovery_assessment",
+              "detail.windows.window_start",
+              "detail.windows.window_end",
+              "detail.windows.requests",
+              "detail.windows.success_rate",
+              "detail.windows.p95_ms",
+              "detail.windows.verdict"
+            ],
+            "index": "sloproof-ledger"
+          }
+        },
+        {
+          "name": "require_recorded_verdict",
+          "type": "if",
+          "condition": "steps.read_verdict.output.hits.total.value: 1",
+          "steps": [
+            {
+              "name": "investigate_if_measured",
+              "type": "if",
+              "condition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+              "steps": [
+                {
+                  "name": "investigate",
+                  "type": "ai.agent",
+                  "with": {
+                    "message": "Investigate run {{ inputs.run_id }} using sloproof_window_metrics and sloproof_evidence_completeness for window_start {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_start }} inclusive and window_end {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_end }} exclusive. Cite the tool IDs and input parameters. This is a review of a completed trial. Recommend operator next steps only."
+                  },
+                  "agent-id": "sloproof_investigator"
+                }
+              ],
+              "else": [
+                {
+                  "name": "no_observation_window",
+                  "type": "console",
+                  "with": {
+                    "message": "No recorded observation window exists. Skip metric interpretation; explain the missing evidence."
+                  }
+                }
+              ]
+            },
+            {
+              "name": "explain_recorded_verdict",
+              "type": "ai.agent",
+              "with": {
+                "message": "Explain the existing deterministic verdict for run {{ inputs.run_id }}. Call sloproof_recorded_verdict to retrieve it independently. Here is the recorded decision and its bounded windows: {{ steps.read_verdict.output.hits.hits[0]._source | json }} Copy its verdict exactly; do not issue a new verdict. Explain the reason, scope, and next operator decision. No routing has changed."
+              },
+              "agent-id": "sloproof_verifier"
+            },
+            {
+              "name": "recorded_result",
+              "type": "console",
+              "with": {
+                "message": "Recorded Go verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. Run: {{ inputs.run_id }}. Incident OPEN. Routing NO_AUTOMATIC_CHANGE. AI outputs above are advisory explanations only."
+              }
+            }
+          ],
+          "else": [
+            {
+              "name": "missing_or_ambiguous_verdict",
+              "type": "console",
+              "with": {
+                "message": "REVIEW_BLOCKED for run {{ inputs.run_id }}: expected exactly one deterministic verdict, found {{ steps.read_verdict.output.hits.total.value }}. No agent was called and no verdict or routing action was produced."
+              }
+            }
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "type": "manual",
+          "inputs": [
+            {
+              "name": "run_id",
+              "required": true,
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    "yaml": "version: '1'\nname: sloproof-loop\ndescription: Review a recorded deterministic recovery verdict with Elastic Agent Builder. All routing remains operator-controlled.\nenabled: true\ntags: [sloproof, recorded-evidence, advisory]\ntriggers:\n  - type: manual\n    inputs:\n      - name: run_id\n        type: string\n        required: true\nsettings:\n  timeout: 5m\nsteps:\n  - name: read_verdict\n    type: elasticsearch.search\n    with:\n      index: sloproof-ledger\n      size: 2\n      track_total_hits: true\n      query:\n        bool:\n          filter:\n            - term: {run_id: '{{ inputs.run_id }}'}\n            - term: {event: verdict}\n            - term: {actor: deterministic-verifier}\n      _source:\n        - run_id\n        - event\n        - actor\n        - verdict\n        - reason\n        - contract_hash\n        - detail.run_id\n        - detail.verdict\n        - detail.reason\n        - detail.contract_hash\n        - detail.verified_at\n        - detail.recovery_assessment\n        - detail.windows.window_start\n        - detail.windows.window_end\n        - detail.windows.requests\n        - detail.windows.success_rate\n        - detail.windows.p95_ms\n        - detail.windows.verdict\n  - name: require_recorded_verdict\n    type: if\n    condition: 'steps.read_verdict.output.hits.total.value: 1'\n    steps:\n      - name: investigate_if_measured\n        type: if\n        condition: 'steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *'\n        steps:\n          - name: investigate\n            type: ai.agent\n            agent-id: sloproof_investigator\n            with:\n              message: >-\n                Investigate run {{ inputs.run_id }} using sloproof_window_metrics\n                and sloproof_evidence_completeness for window_start\n                {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_start }}\n                inclusive and window_end\n                {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].window_end }}\n                exclusive. Cite the tool IDs and input parameters. This is a\n                review of a completed trial. Recommend operator next steps only.\n        else:\n          - name: no_observation_window\n            type: console\n            with:\n              message: No recorded observation window exists. Skip metric interpretation; explain the missing evidence.\n      - name: explain_recorded_verdict\n        type: ai.agent\n        agent-id: sloproof_verifier\n        with:\n          message: >-\n            Explain the existing deterministic verdict for run {{ inputs.run_id }}.\n            Call sloproof_recorded_verdict to retrieve it independently.\n            Here is the recorded decision and its bounded windows:\n            {{ steps.read_verdict.output.hits.hits[0]._source | json }}\n            Copy its verdict exactly; do not issue a new verdict. Explain the\n            reason, scope, and next operator decision. No routing has changed.\n      - name: recorded_result\n        type: console\n        with:\n          message: >-\n            Recorded Go verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}.\n            Run: {{ inputs.run_id }}. Incident OPEN. Routing NO_AUTOMATIC_CHANGE.\n            AI outputs above are advisory explanations only.\n    else:\n      - name: missing_or_ambiguous_verdict\n        type: console\n        with:\n          message: >-\n            REVIEW_BLOCKED for run {{ inputs.run_id }}: expected exactly one\n            deterministic verdict, found {{ steps.read_verdict.output.hits.total.value }}.\n            No agent was called and no verdict or routing action was produced.\n",
+    "context": {
+      "inputs": {
+        "run_id": "demo-healthy-20260918-01"
+      }
+    },
+    "status": "completed",
+    "createdAt": "2026-09-18T08:47:43.216Z",
+    "triggeredBy": "manual",
+    "version": 10,
+    "scopeStack": [],
+    "currentNodeId": "exitCondition_require_recorded_verdict",
+    "startedAt": "2026-09-18T08:47:45.933Z",
+    "stepExecutionIds": [
+      "05978bba86221cbe9136bad9cfb8ff1b6ee65a84497773428d33c33dcec9a2f3",
+      "700ca72e36d6fcf9e27fe5819d58272a000cd103e0cd2da4c2e55b9a2d37afb6",
+      "fb8717601a0e4fe694cea76ff335ddf5adcf3b768d804cd0cabc0732c081d2cb",
+      "db96337ec47a82a0184c83a60c635730167be2b17df7aee331c52af9514655ac",
+      "94ef709f7c0232822f14fbf5b21c85632bf2241485f4ef4acc818499e2639698",
+      "247d323eef08ae73fe31ca5c062bbe811f90825da5cd5bb4190edcbeb28b6943"
+    ],
+    "usage": {
+      "cachedTokens": 15332,
+      "inputTokens": 35087,
+      "outputTokens": 1917,
+      "totalTokens": 37004
+    },
+    "stepUsage": [
+      {
+        "cachedTokens": 8002,
+        "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+        "stepId": "investigate",
+        "inputTokens": 19667,
+        "outputTokens": 1544,
+        "totalTokens": 21211
+      },
+      {
+        "cachedTokens": 7330,
+        "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+        "stepId": "explain_recorded_verdict",
+        "inputTokens": 15420,
+        "outputTokens": 373,
+        "totalTokens": 15793
+      }
+    ],
+    "duration": 35552,
+    "finishedAt": "2026-09-18T08:48:21.485Z",
+    "isTestRun": false,
+    "stepExecutions": [
+      {
+        "id": "05978bba86221cbe9136bad9cfb8ff1b6ee65a84497773428d33c33dcec9a2f3",
+        "stepId": "read_verdict",
+        "stepType": "elasticsearch.search",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 1,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:47:46.223Z",
+        "globalExecutionIndex": 0,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T08:47:46.228Z",
+        "executionTimeMs": 5,
+        "input": {
+          "track_total_hits": true,
+          "query": {
+            "bool": {
+              "filter": [
+                {
+                  "term": {
+                    "run_id": "demo-healthy-20260918-01"
+                  }
+                },
+                {
+                  "term": {
+                    "event": "verdict"
+                  }
+                },
+                {
+                  "term": {
+                    "actor": "deterministic-verifier"
+                  }
+                }
+              ]
+            }
+          },
+          "size": 2,
+          "_source": [
+            "run_id",
+            "event",
+            "actor",
+            "verdict",
+            "reason",
+            "contract_hash",
+            "detail.run_id",
+            "detail.verdict",
+            "detail.reason",
+            "detail.contract_hash",
+            "detail.verified_at",
+            "detail.recovery_assessment",
+            "detail.windows.window_start",
+            "detail.windows.window_end",
+            "detail.windows.requests",
+            "detail.windows.success_rate",
+            "detail.windows.p95_ms",
+            "detail.windows.verdict"
+          ],
+          "index": "sloproof-ledger"
+        },
+        "output": {
+          "took": 1,
+          "timed_out": false,
+          "_shards": {
+            "total": 6,
+            "successful": 6,
+            "skipped": 0,
+            "failed": 0
+          },
+          "hits": {
+            "total": {
+              "value": 1,
+              "relation": "eq"
+            },
+            "max_score": 0,
+            "hits": [
+              {
+                "_index": "sloproof-ledger-v1-20260918t071814z",
+                "_id": "3fe2d26ae1e4d2f0d4faba387895517e",
+                "_score": 0,
+                "_source": {
+                  "actor": "deterministic-verifier",
+                  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                  "detail": {
+                    "run_id": "demo-healthy-20260918-01",
+                    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+                    "verdict": "PROVED",
+                    "reason": "all frozen observation windows pass",
+                    "verified_at": "2026-09-18T08:28:08.548229Z",
+                    "windows": [
+                      {
+                        "window_start": "2026-09-18T08:23:14.99Z",
+                        "window_end": "2026-09-18T08:24:14.99Z",
+                        "verdict": "PROVED",
+                        "requests": 600,
+                        "success_rate": 1,
+                        "p95_ms": 57.2282
+                      },
+                      {
+                        "window_start": "2026-09-18T08:24:14.99Z",
+                        "window_end": "2026-09-18T08:25:14.99Z",
+                        "verdict": "PROVED",
+                        "requests": 600,
+                        "success_rate": 1,
+                        "p95_ms": 57.28355
+                      },
+                      {
+                        "window_start": "2026-09-18T08:25:14.99Z",
+                        "window_end": "2026-09-18T08:26:14.99Z",
+                        "verdict": "PROVED",
+                        "requests": 600,
+                        "success_rate": 1,
+                        "p95_ms": 57.3444
+                      }
+                    ],
+                    "recovery_assessment": {
+                      "incident_status": "OPEN",
+                      "promotion_gate": "ELIGIBLE_FOR_OPERATOR_REVIEW",
+                      "routing_action": "NO_AUTOMATIC_CHANGE",
+                      "explanation": "The candidate meets the frozen contract in the observed trial. An operator must decide whether to expand traffic; full-load recovery needs separate measurements.",
+                      "scope": "OBSERVED_TRIAL_ONLY"
+                    }
+                  },
+                  "event": "verdict",
+                  "reason": "all frozen observation windows pass",
+                  "run_id": "demo-healthy-20260918-01",
+                  "verdict": "PROVED"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "700ca72e36d6fcf9e27fe5819d58272a000cd103e0cd2da4c2e55b9a2d37afb6",
+        "stepId": "require_recorded_verdict",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 2,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:47:46.519Z",
+        "globalExecutionIndex": 1,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.total.value: 1",
+          "condition": "steps.read_verdict.output.hits.total.value: 1",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 34382,
+        "finishedAt": "2026-09-18T08:48:20.901Z"
+      },
+      {
+        "id": "fb8717601a0e4fe694cea76ff335ddf5adcf3b768d804cd0cabc0732c081d2cb",
+        "stepId": "investigate_if_measured",
+        "stepType": "if",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 4,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:47:46.824Z",
+        "globalExecutionIndex": 2,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "state": {
+          "conditionResult": true
+        },
+        "input": {
+          "rawCondition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+          "condition": "steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *",
+          "conditionResult": true
+        },
+        "output": {
+          "conditionResult": true
+        },
+        "executionTimeMs": 22581,
+        "finishedAt": "2026-09-18T08:48:09.405Z"
+      },
+      {
+        "id": "db96337ec47a82a0184c83a60c635730167be2b17df7aee331c52af9514655ac",
+        "stepId": "investigate",
+        "stepType": "ai.agent",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          },
+          {
+            "stepId": "investigate_if_measured",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_investigate_if_measured",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_investigate_if_measured",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 6,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:47:47.120Z",
+        "globalExecutionIndex": 3,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "input": {
+          "message": "Investigate run demo-healthy-20260918-01 using sloproof_window_metrics and sloproof_evidence_completeness for window_start 2026-09-18T08:23:14.99Z inclusive and window_end 2026-09-18T08:24:14.99Z exclusive. Cite the tool IDs and input parameters. This is a review of a completed trial. Recommend operator next steps only."
+        },
+        "output": {
+          "metadata": {
+            "usage": {
+              "cachedTokens": 8002,
+              "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+              "inputTokens": 19667,
+              "outputTokens": 1544,
+              "totalTokens": 21211
+            }
+          },
+          "message": "## Findings \u2014 run `demo-healthy-20260918-01`, window `2026-09-18T08:23:14.99Z` (inclusive) \u2192 `2026-09-18T08:24:14.99Z` (exclusive)\n\n**Tool calls:**\n- `sloproof_window_metrics` (result id `T4fylp`) \u2014 same run_id/window params\n- `sloproof_evidence_completeness` (result id `ltRYwP`) \u2014 same run_id/window params\n\n**Evidence completeness (this window only):**\n\n| version | requests | meets_min_samples (\u2265400) | config_hashes | first_seen | last_seen |\n|---|---|---|---|---|---|\n| v1 | 600 | true | 1 | 08:23:15.020Z | 08:24:14.930Z |\n| v2 | 5398 | true | 1 | 08:23:14.990Z | 08:24:14.981Z |\n\nSample volume in this single window is adequate for both versions, and each has a single config_hash (no mid-window behavior change).\n\n**Window metrics (this window only):**\n\n| version | requests | successes | success_rate | p50_ms | p95_ms |\n|---|---|---|---|---|---|\n| v1 | 600 | 600 | 100% | 49.34 | 57.23 |\n| v2 | 5398 | 4318 | 79.99% | 850.20 | 857.59 |\n\n**Comparison against the contract** (success \u226599%, p95 <300ms, \u2265400 v1 samples in each of **three** 60-second windows):\n- In this one window, v1 meets both the success-rate (100% \u2265 99%) and latency (57.23ms < 300ms) thresholds, and clears the 400-sample minimum (600 samples).\n- v2 (incident version) fails both thresholds badly in this window: ~80% success and ~858ms p95.\n- **Important limitation:** the contract requires evaluation across **three** separate 60-second windows, not one. This is only one window's data \u2014 it cannot by itself decide the whole trial. No verdict (PROVED/FAILED) can be issued from a single window, and none is being issued here.\n\n**This is not a new verdict** \u2014 it is a factual comparison of one recorded window's data. Any prior recorded verdict for this trial (if one exists) should be checked separately; I have not retrieved or assumed one here.\n\n## Advisory next steps for operator\n1. Retrieve and review the other two required 60-second windows for this trial (if not already reviewed) before drawing any conclusion about the full three-window contract outcome.\n2. If all three windows show v1 pattern consistent with this one (\u226599% success, p95 <300ms, \u2265400 samples), that would support a PROVED-type outcome for v1 \u2014 but confirm via the actual recorded verdict/contract evaluation, not by manual extrapolation from a single window.\n3. Do not treat v2's poor performance in this window as authorizing any rollback or routing change \u2014 FAILED/incident status does not by itself order reversal to v2, and this review does not constitute a routing decision.\n4. Flag this window's v2 result (79.99% success, 857ms p95) for operator awareness as it reflects the known incident condition on v2, consistent with why v1 is the recovery candidate under review.\n5. Escalate to whoever owns the full trial reconciliation to confirm the multi-window verdict status before any operational action is taken."
+        },
+        "usage": {
+          "cachedTokens": 8002,
+          "inputTokens": 19667,
+          "outputTokens": 1544,
+          "totalTokens": 21211
+        },
+        "executionTimeMs": 22093,
+        "finishedAt": "2026-09-18T08:48:09.213Z"
+      },
+      {
+        "id": "94ef709f7c0232822f14fbf5b21c85632bf2241485f4ef4acc818499e2639698",
+        "stepId": "explain_recorded_verdict",
+        "stepType": "ai.agent",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 12,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:48:09.703Z",
+        "globalExecutionIndex": 4,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "input": {
+          "message": "Explain the existing deterministic verdict for run demo-healthy-20260918-01. Call sloproof_recorded_verdict to retrieve it independently. Here is the recorded decision and its bounded windows: {\"actor\":\"deterministic-verifier\",\"contract_hash\":\"dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f\",\"detail\":{\"run_id\":\"demo-healthy-20260918-01\",\"contract_hash\":\"dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f\",\"verdict\":\"PROVED\",\"reason\":\"all frozen observation windows pass\",\"verified_at\":\"2026-09-18T08:28:08.548229Z\",\"windows\":[{\"window_start\":\"2026-09-18T08:23:14.99Z\",\"window_end\":\"2026-09-18T08:24:14.99Z\",\"verdict\":\"PROVED\",\"requests\":600,\"success_rate\":1,\"p95_ms\":57.2282},{\"window_start\":\"2026-09-18T08:24:14.99Z\",\"window_end\":\"2026-09-18T08:25:14.99Z\",\"verdict\":\"PROVED\",\"requests\":600,\"success_rate\":1,\"p95_ms\":57.28355},{\"window_start\":\"2026-09-18T08:25:14.99Z\",\"window_end\":\"2026-09-18T08:26:14.99Z\",\"verdict\":\"PROVED\",\"requests\":600,\"success_rate\":1,\"p95_ms\":57.3444}],\"recovery_assessment\":{\"incident_status\":\"OPEN\",\"promotion_gate\":\"ELIGIBLE_FOR_OPERATOR_REVIEW\",\"routing_action\":\"NO_AUTOMATIC_CHANGE\",\"explanation\":\"The candidate meets the frozen contract in the observed trial. An operator must decide whether to expand traffic; full-load recovery needs separate measurements.\",\"scope\":\"OBSERVED_TRIAL_ONLY\"}},\"event\":\"verdict\",\"reason\":\"all frozen observation windows pass\",\"run_id\":\"demo-healthy-20260918-01\",\"verdict\":\"PROVED\"} Copy its verdict exactly; do not issue a new verdict. Explain the reason, scope, and next operator decision. No routing has changed."
+        },
+        "output": {
+          "metadata": {
+            "usage": {
+              "cachedTokens": 7330,
+              "connectorId": ".anthropic-claude-5-sonnet-chat_completion",
+              "inputTokens": 15420,
+              "outputTokens": 373,
+              "totalTokens": 15793
+            }
+          },
+          "message": "The recorded verdict for run demo-healthy-20260918-01, produced by the deterministic Go verifier (not by me), is **PROVED**, with the reason \"all frozen observation windows pass\" \u2014 confirmed by all three recorded windows (08:23:14.99\u201308:26:14.99Z, 600 requests each, 100% success, p95 ~57.2\u201357.3ms). This PROVED status is scoped to the observed trial only: incident_status remains OPEN, promotion_gate is ELIGIBLE_FOR_OPERATOR_REVIEW, and routing_action is NO_AUTOMATIC_CHANGE \u2014 no routing has changed. The next step is for an operator to review the trial and decide whether to expand traffic, since full-load recovery requires separate measurements beyond this bounded trial."
+        },
+        "usage": {
+          "cachedTokens": 7330,
+          "inputTokens": 15420,
+          "outputTokens": 373,
+          "totalTokens": 15793
+        },
+        "executionTimeMs": 10603,
+        "finishedAt": "2026-09-18T08:48:20.306Z"
+      },
+      {
+        "id": "247d323eef08ae73fe31ca5c062bbe811f90825da5cd5bb4190edcbeb28b6943",
+        "stepId": "recorded_result",
+        "stepType": "console",
+        "scopeStack": [
+          {
+            "stepId": "workflow_level_timeout",
+            "nestedScopes": [
+              {
+                "nodeId": "enterTimeoutZone_workflow_level_timeout",
+                "nodeType": "enter-timeout-zone"
+              }
+            ]
+          },
+          {
+            "stepId": "require_recorded_verdict",
+            "nestedScopes": [
+              {
+                "nodeId": "enterCondition_require_recorded_verdict",
+                "nodeType": "enter-if"
+              },
+              {
+                "nodeId": "enterThen_require_recorded_verdict",
+                "nodeType": "enter-then-branch",
+                "scopeId": "true"
+              }
+            ]
+          }
+        ],
+        "topologicalIndex": 13,
+        "status": "completed",
+        "startedAt": "2026-09-18T08:48:20.595Z",
+        "globalExecutionIndex": 5,
+        "stepExecutionIndex": 0,
+        "workflowRunId": "95a999fd-72f3-4b40-acbb-fa3ef5ce2e50",
+        "workflowId": "sloproof-loop",
+        "spaceId": "default",
+        "isTestRun": false,
+        "finishedAt": "2026-09-18T08:48:20.596Z",
+        "executionTimeMs": 1,
+        "input": {
+          "message": "Recorded Go verdict: PROVED. Run: demo-healthy-20260918-01. Incident OPEN. Routing NO_AUTOMATIC_CHANGE. AI outputs above are advisory explanations only."
+        },
+        "output": "Recorded Go verdict: PROVED. Run: demo-healthy-20260918-01. Incident OPEN. Routing NO_AUTOMATIC_CHANGE. AI outputs above are advisory explanations only."
+      }
+    ]
+  }
+}

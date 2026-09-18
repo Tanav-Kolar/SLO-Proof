@@ -46,6 +46,10 @@ unchanged: this prototype does not autonomously promote or reverse traffic.
 - Reasoning: an Investigator recommends an action from observations, a Narrator
   explains an existing verdict, and a Briefer answers questions using saved query
   tools. They call Bedrock Converse and cannot execute Kubernetes changes.
+- Elastic integration: Agent Builder provides an Investigator, Verdict Explainer
+  and Evidence Briefer. A native Elastic Workflow retrieves the existing Go
+  verdict, checks that exactly one decision exists, and sequences investigation
+  and explanation. It has no routing or verdict-writing step.
 - Presentation: a portable HTML export shows saved measurements, verdicts,
   receipts, and exact queries without embedding credentials.
 
@@ -83,6 +87,11 @@ Demonstrated with retained evidence:
   citations. Their text remains advisory and requires review: retained early
   outputs include a truncated narrative, a count-denominator wording error and
   an overstatement of integrity-check scope.
+- The native Elastic review workflow completed on the PROVED, FAILED and
+  INCONCLUSIVE records. The INCONCLUSIVE run skipped metric investigation because
+  it had no observation windows. A fourth execution with no recorded decision
+  blocked review before any agent call. Agent Builder tools matched the saved
+  healthy and slow trial evidence; execution IDs and outputs are retained.
 
 These results use generated traffic. No verdict automatically changes routing
 or closes the incident. The earlier 57.48 ms latency check is shown separately
@@ -102,9 +111,10 @@ scripts/agent.sh ask --run-id demo-1 \
   API-key privilege checks. Runtime credential separation is verified using
   separate ingest, verifier and controller keys.
 - AWS: EKS, ECR, and Bedrock Converse; the agents default to GPT-OSS 120B.
-- Agent Builder: previously probed successfully, but the current reasoning path
-  calls Bedrock directly because the tested connector could not accept the
-  Workshop credentials' session token.
+- Agent Builder and Workflows: live post-verdict review and interactive evidence
+  questions through Elastic's configured model connector. This is separate from
+  the direct Bedrock path; the tested Kibana Bedrock connector could not accept
+  the Workshop credentials' session token.
 - Sarvam and SageMaker: not used in the delivered workflow.
 - Other: Go, Python, Kubernetes Gateway API, Envoy Gateway, and static HTML.
 
