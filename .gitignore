@@ -23,3 +23,14 @@ dist/
 build/
 .idea/
 .vscode/
+
+# Local planning documents
+/HACKATHON_PLAN.md
+/EKS_FAILURE_CANARY_PLAN.md
+/SLOProof_Architecture.pdf
+/SLOProof_Architecture_1.pdf
+/JUDGING_CRITERIA.md
+/AGENTS.md
+
+# Local demo kubeconfig (never target a real cluster)
+.kube/
