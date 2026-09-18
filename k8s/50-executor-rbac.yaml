@@ -1,0 +1,35 @@
+# Grants the Lambda recovery executor (identified to the cluster via an EKS
+# access entry mapping its IAM role to the "sloproof-lambda-executor" group
+# -- see scripts/deploy-executor.sh) get/patch on exactly one named
+# HTTPRoute. resourceNames is what makes this a single-resource grant rather
+# than namespace-wide httproute access; there is deliberately no wildcard.
+#
+# Named distinctly from a pre-existing "sloproof-executor" Role/RoleBinding
+# (ServiceAccount-subject, likely a teammate's IRSA/pod-based executor) so
+# the two don't fight over the same resource.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sloproof-lambda-executor
+  namespace: checkout
+  labels: { app.kubernetes.io/part-of: sloproof }
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    resourceNames: ["checkout-route"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sloproof-lambda-executor
+  namespace: checkout
+  labels: { app.kubernetes.io/part-of: sloproof }
+subjects:
+  - kind: Group
+    name: sloproof-lambda-executor
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: sloproof-lambda-executor
+  apiGroup: rbac.authorization.k8s.io
