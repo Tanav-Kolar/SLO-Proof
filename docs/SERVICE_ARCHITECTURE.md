@@ -37,6 +37,7 @@ These probes were read-only. They replace the open questions in the earlier plan
 | D6 | **Client-observed outcomes → `_bulk`**, not OpenTelemetry | One ingestion path we control, captures timeouts and gateway failures that never reach the service, and no collector to debug |
 | D7 | **Verifier is a separate process with a read-only key** | The promotion decision must be computationally and credentially separate from the thing that wants to promote. This is the core claim of the project |
 | D8 | **Agent output is advisory and written to the ledger as `advisory`** | The agent recommends; the deterministic verifier decides. It has no write path and no executor access |
+| D9 | **The load generator runs inside the cluster**, not on the operator's laptop | Added 18 September 2026 after the first real run. Measuring from a laptop in India against a gateway in `us-west-2` added ~245 ms of round-trip to every sample, which pushed healthy v1 to a p95 of 339 ms and would have produced a FAILED verdict for a service that was performing correctly. The vantage point has to sit next to the service or the contract measures the demo operator's geography |
 
 ## 3. The four planes
 
@@ -195,13 +196,32 @@ Owners follow the split already proposed in `JUDGING_CRITERIA.md`. Three owners 
 
 Order of completion: measured routing, then real evidence, then the verdict, then the agent, then the dashboard. Reserve the final 45 minutes for two clean rehearsals from reset and a backup recording.
 
-**Current state, 18 September 2026.** Person 1: cluster live, both versions
-deployed behind Envoy Gateway, all four pods ready — but the blocking gate is
-*not* met, because no measured 90/10 split has been run yet. Person 2: ingest
-and evidence path verified end to end against the live cluster (1500 requests
-shipped and reconciled; ES|QL returned v2 at 80.0% success and p95 856 ms,
-breaching both thresholds) — the verifier and ledger writer remain unbuilt, so
-the gate is not met either. Person 3: not started.
+**Current state, 18 September 2026.**
+
+*Person 1 — gate MET.* A full demo sequence ran against the live cluster
+(`run_id: demo-1`, 37,999 requests). In the 10/90 trial window the observed
+split was exactly **10.0% / 90.0%** across 14,689 ordinary requests, which is
+the gate: per-version counts prove the split rather than asserting it.
+
+| Trial window 06:28:42Z → 06:31:12Z | requests | share | success | p95 |
+|---|---:|---:|---:|---:|
+| checkout-v1 (healthy) | 1,469 | 10.0% | 100.0% | 339 ms |
+| checkout-v2 (regression) | 13,220 | 90.0% | 80.0% | 1,142 ms |
+
+*Person 2 — gate NOT met.* Ingest, mappings and the ES|QL path are verified end
+to end, but the verifier and ledger writer do not exist, so nothing turns those
+numbers into a verdict.
+
+*Person 3 —* not started.
+
+**The finding that matters more than either gate.** Healthy v1 measured a p95 of
+339 ms, over the contract's 300 ms threshold, which would return FAILED for a
+service that is working correctly. The cause is not the service: the same
+request measured from inside the cluster completes in ~50 ms, while from the
+operator's laptop the TCP connect alone costs 245 ms. The load generator was
+running trans-Pacific. Until it runs inside the cluster (D9), **no run can
+produce a PROVED verdict**, and the showcase "successful recovery" scenario
+cannot work. This is the next thing to fix, ahead of the verifier.
 
 ## 9. Open items
 
