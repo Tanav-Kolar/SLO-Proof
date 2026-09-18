@@ -1,0 +1,16 @@
+2026/09/18 08:22:53 run_id=demo-healthy-20260918-01 rps=100 target=http://envoy-checkout-checkout-gateway-220cbdc2.envoy-gateway-system.svc.cluster.local/checkout warmup=0s duration=5m0s
+2026/09/18 08:27:55 reconciliation query failed: refresh returned HTTP 403
+{
+  "achieved_rps": 99.4,
+  "arrivals": 29993,
+  "bulk_calls": 151,
+  "completed": 29993,
+  "dropped_arrivals": 0,
+  "elapsed_seconds": 301.9,
+  "indexed_failed": 0,
+  "indexed_ok": 29993,
+  "reconciled": false,
+  "run_id": "demo-healthy-20260918-01",
+  "searchable_in_es": -1,
+  "target_rps": 100
+}

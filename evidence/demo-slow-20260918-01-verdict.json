@@ -1,0 +1,27 @@
+{
+  "run_id": "demo-slow-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "version": "v1",
+  "verdict": "INCONCLUSIVE",
+  "reason": "Elasticsearch GET /sloproof-ledger/_doc/demo-slow-20260918-01.effective: HTTP 404: {\"_index\":\"sloproof-ledger-v1-20260918t071814z\",\"_id\":\"demo-slow-20260918-01.effective\",\"found\":false}",
+  "verified_at": "2026-09-18T08:15:44.586994Z",
+  "receipt": {
+    "run_id": "",
+    "contract_hash": "",
+    "route_uid": "",
+    "resource_version_before": "",
+    "resource_version_after": "",
+    "weights_after": null,
+    "api_accepted_at": "",
+    "route_effective_at": ""
+  },
+  "reconciliation": null,
+  "windows": null,
+  "recovery_assessment": {
+    "incident_status": "OPEN",
+    "promotion_gate": "BLOCKED",
+    "routing_action": "NO_AUTOMATIC_CHANGE",
+    "explanation": "The evidence cannot establish recovery. Routing remains unchanged and promotion is blocked pending adequate evidence and operator review.",
+    "scope": "OBSERVED_TRIAL_ONLY"
+  }
+}

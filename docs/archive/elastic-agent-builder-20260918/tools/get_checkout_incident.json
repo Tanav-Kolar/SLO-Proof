@@ -1,0 +1,10 @@
+{
+  "id": "get_checkout_incident",
+  "type": "esql",
+  "description": "Diagnoses a checkout incident. Returns the current error rate, total and error request counts, and the failing dependency over the last 5 minutes. Call this first when investigating a checkout SLO burn.",
+  "tags": [],
+  "configuration": {
+    "query": "FROM traces-*.otel-* | WHERE span.name == \"POST /checkout\" AND @timestamp >= NOW() - 5 minutes | STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == \"Error\" | EVAL error_rate = ROUND(errors::double / total, 4) | EVAL failing_dependency = \"quote\"",
+    "params": {}
+  }
+}

@@ -1,5 +1,9 @@
 # SLOProof service architecture
 
+This proposal preserves earlier capability probes and infrastructure decisions.
+For the later implemented control plane and live results, use
+[live validation](LIVE_VALIDATION_20260918.md) and [control status](../src/control/README.md).
+
 Status: proposed architecture with a verified capability baseline, 18 September 2026. Sections marked **Verified** were probed against the actual credentials in `.env` on that date. Everything else is a design proposal, not a completed capability.
 
 Companion documents: [DEMO_AND_SERVICE_REUSE.md](DEMO_AND_SERVICE_REUSE.md) for demo behavior, metrics, and the recovery contract; `JUDGING_CRITERIA.md` for scoring weights; `HACKATHON_PLAN.md` and `EKS_FAILURE_CANARY_PLAN.md` for the earlier EKS-first scope.

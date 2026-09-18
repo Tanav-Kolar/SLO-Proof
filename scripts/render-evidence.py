@@ -29,6 +29,7 @@ checks=[]
 if negative.exists():
  d=json.loads(negative.read_text());checks.append({'name':'Unrestricted verifier credential rejected','result':d['verdict'],'reason':d['reason'],'at':d['verified_at'],'scope':'Credential check only; no SLO verdict'})
 agents=[]
+briefings={}
 scope_check=evidence/'key-scopes.json'
 if scope_check.exists():
  d=json.loads(scope_check.read_text())
@@ -36,7 +37,12 @@ if scope_check.exists():
 for path in sorted(evidence.glob('*-agents.json')):
  d=json.loads(path.read_text())
  d['artifact_source']='evidence/'+path.name
- agents.append(d)
+ briefings.setdefault(d['run_id'],[]).append(d)
+for run,attempts in sorted(briefings.items()):
+ attempts.sort(key=lambda d:d.get('attempt',1))
+ latest=attempts[-1]
+ latest['earlier_briefings']=[d['artifact_source'] for d in attempts[:-1]]
+ agents.append(latest)
 payload={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'contract':contract,'contract_hash':hashlib.sha256((root/'contracts/checkout-slo.json').read_bytes()).hexdigest(),'measurements':measurements,'verdicts':verdicts,'checks':checks,'agents':agents}
 # Escape HTML-significant characters before embedding JSON in a script node.
 serialized=json.dumps(payload,ensure_ascii=True).replace('&','\\u0026').replace('<','\\u003c').replace('>','\\u003e')

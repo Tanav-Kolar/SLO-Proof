@@ -53,7 +53,9 @@ export LOADGEN_JOB="loadgen-${RUN_ID}" DURATION=300s WARMUP=0s RPS=100
 scripts/run-loadgen.sh
 kubectl -n checkout wait --for=condition=Ready pod -l "job-name=$LOADGEN_JOB" --timeout=120s
 scripts/control.sh freeze --run-id "$RUN_ID" --config-hash "$config_hash" > "evidence/$RUN_ID-contract.json"
-scripts/control.sh trial --run-id "$RUN_ID" > "evidence/$RUN_ID-route.json"
+if ! scripts/control.sh trial --run-id "$RUN_ID" > "evidence/$RUN_ID-route.json"; then
+  echo 'Trial action refused or failed; no retry. Collecting the Job evidence so the verifier can record the missing receipt.' >&2
+fi
 
 # Wait for the generator to finish; the observer derives its timestamp from
 # the original post-patch traffic, not from the clock at which we query it.

@@ -30,6 +30,11 @@ Contract in force:
   an empty result is MISSING EVIDENCE, never zero errors
 
 Rules you must follow:
+- In this recovery demo, v1 is the recovery candidate and v2 is the incident
+  version. These roles are explicit; do not infer them from version numbering.
+- A passing bounded trial supports operator review only. It does not prove
+  full-load recovery or authorize an automatic traffic change. A failed
+  candidate can still be better than v2; failure does not order reversal to v2.
 - If any version in the window has fewer than 400 ordinary requests, or a query
   returned no rows, or config_hashes is not 1, the only permitted action is
   "inconclusive".

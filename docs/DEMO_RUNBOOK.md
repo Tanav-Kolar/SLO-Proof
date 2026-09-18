@@ -12,17 +12,20 @@ may be worse than the candidate. A candidate can improve the incident and still
 miss the acceptance criteria. Every trial verdict leaves the incident open and
 routing unchanged. Even PROVED applies only to the observed trial load.
 
-## Current gate
+## Retained live evidence
 
-Healthy in-cluster v1 has a measured p95 of 57.48 ms across 7,001 ordinary
-requests, with 8,000 total records reconciled. This was a measurement check,
-not a completed frozen-contract recovery trial.
+All 11 scoped-credential authorization checks passed. Actual trial run IDs,
+per-window measurements, encountered failures and limits are recorded in
+[live validation](LIVE_VALIDATION_20260918.md). The HTML export uses these saved
+artifacts, not fixture verdicts.
 
-Scoped Elasticsearch credentials are still required before the real FAILED and
-PROVED scenarios can be demonstrated. `demo/evidence.html` clearly displays this
-absence; it does not insert fixture verdicts.
+Present `demo-slow-20260918-02` (FAILED at roughly 508 ms), then
+`demo-healthy-20260918-01` (PROVED at roughly 57 ms), and finally
+`demo-slow-20260918-01` (INCONCLUSIVE: missing observed-route receipt).
+Both measured trials used the same acceptance contract. No automatic expansion
+occurred after the pass.
 
-## Operator commands once scoped credentials are ready
+## Operator commands
 
 From the repository root, supply environment variables in the operator shell:
 
@@ -63,8 +66,19 @@ The ingest key's built-in refresh/count check can be forbidden by design.
 `indexed_ok` and `completed` from the finished Job are reconciled by the read-only
 verifier against Elasticsearch after the contract's ingestion allowance.
 
-The full scenario orchestration has not yet been exercised with scoped keys.
-Treat it as implemented but awaiting live validation.
+Scoped-key orchestration has been exercised live. Re-running starts new cloud
+workloads and explicitly changes the incident baseline; it is not needed to
+present the retained evidence.
+
+For an AI explanation of a recorded verdict with observation windows:
+
+```bash
+python3 scripts/brief-trial.py <run-id>
+# Use --attempt 2 for an additional briefing; earlier output is retained.
+```
+
+This invokes three advisory Bedrock agents after verification. It does not show
+an agent autonomously initiating or executing recovery.
 
 ## Presentation screen
 

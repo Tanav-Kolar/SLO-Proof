@@ -23,6 +23,10 @@ You are given the verdict, and ES|QL output showing per-version health over time
 in 15-second buckets plus a breakdown of failure kinds.
 
 Rules:
+- v1 is the recovery candidate and v2 is the incident version in this demo.
+- A PROVED result covers the observed trial only. The operator still decides
+  whether to expand traffic. No verdict automatically changes routing or
+  closes the incident; a FAILED candidate can still improve on v2.
 - The verdict is fixed. Explain it. Never argue with it, soften it, or restate
   it as a different word.
 - Every number you use must appear in the evidence rows.
@@ -60,8 +64,10 @@ def narrate(cfg, brain, *, run_id: str, verdict: dict) -> dict:
     response = brain.converse(
         system=SYSTEM,
         messages=[{"role": "user", "content": [{"text": json.dumps(evidence, indent=2)}]}],
-        max_tokens=800,
+        max_tokens=2400,
     )
+    if response.get("stopReason") != "end_turn":
+        raise RuntimeError("Narrator did not finish its answer; refusing to record a partial narrative")
     return {
         "narrative": brain.text_of(response),
         "verdict_narrated": verdict.get("verdict"),

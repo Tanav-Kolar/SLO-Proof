@@ -1,0 +1,22 @@
+{
+  "index": "sloproof-evidence",
+  "mappings": {
+    "properties": {
+      "claim": {
+        "type": "text"
+      },
+      "contract_uid": {
+        "type": "keyword"
+      },
+      "esql": {
+        "type": "text"
+      },
+      "evidence_id": {
+        "type": "keyword"
+      },
+      "produced_at": {
+        "type": "date"
+      }
+    }
+  }
+}

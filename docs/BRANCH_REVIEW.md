@@ -3,6 +3,21 @@
 Review on 18 September 2026. Use `main` for the integrated demo. Existing feature
 branches remain available as history; they are not alternative deployment paths.
 
+The later feature-branch update at `87fad88` was also reviewed. It rebased the
+same tracing/Lambda change as `bdb8dbd`, added Elastic-side exports in `654cf89`,
+and added local scratch/planning ignore rules. The ignore rules are integrated.
+The exports are preserved under
+[`docs/archive/elastic-agent-builder-20260918/`](archive/elastic-agent-builder-20260918/README.md)
+as an explicitly archived prototype: its LLM-issued verdict, automatic rollback,
+unbounded trace queries and API-time anchor violate the canonical demo boundary.
+No active mapping, query or execution path is replaced by those definitions.
+
+The final demo checkpoint also includes all three retained live trial outcomes,
+both measured-trial agent briefings, the updated evidence export and operator
+documentation, and the portable demo ZIP. A zero-byte route-file placeholder
+from the refused first trial is omitted: it is not an execution receipt. The
+original INCONCLUSIVE verdict and completed load-generator log are retained.
+
 ## Branch assessment
 
 | Branch / change | Assessment | Integration decision |

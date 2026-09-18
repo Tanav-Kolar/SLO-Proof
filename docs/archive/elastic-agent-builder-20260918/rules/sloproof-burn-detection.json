@@ -1,0 +1,29 @@
+{
+  "id": "sloproof-burn-detection",
+  "name": "sloproof-burn-detection",
+  "rule_type_id": ".es-query",
+  "consumer": "alerts",
+  "schedule": {
+    "interval": "1m"
+  },
+  "enabled": false,
+  "params": {
+    "searchType": "esQuery",
+    "index": [
+      "traces-*.otel-*"
+    ],
+    "timeField": "@timestamp",
+    "esQuery": "{\"query\":{\"query_string\":{\"query\":\"resource.attributes.service.name:\\\"checkout\\\" AND span.name:\\\"POST \\\\/checkout\\\" AND status.code:\\\"Error\\\"\"}}}",
+    "size": 100,
+    "thresholdComparator": ">",
+    "threshold": [
+      10
+    ],
+    "timeWindowSize": 1,
+    "timeWindowUnit": "m",
+    "aggType": "count",
+    "groupBy": "all",
+    "excludeHitsFromPreviousRun": true
+  },
+  "actions": []
+}

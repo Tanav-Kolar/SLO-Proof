@@ -1,5 +1,8 @@
 # Live build audit — 18 September 2026
 
+Historical build notes below. For the subsequent scoped-key checks, real trial
+verdicts and remaining limits, see [live validation](LIVE_VALIDATION_20260918.md).
+
 The supplied handoff mixed evidence from two AWS accounts. The repository's
 pinned kubeconfig has been refreshed for `994795733035`; ambient kubeconfig
 was never used. The old context remains irrelevant to guarded commands.

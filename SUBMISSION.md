@@ -1,8 +1,8 @@
 # SLOProof — evidence for recovery decisions
 
-Submission draft, 18 September 2026. Live recovery verdicts remain pending scoped
-Elasticsearch credentials. Update the demo status only after the retained
-evidence shows the actual outcome.
+Submission draft, 18 September 2026. Scoped credentials and real trial evidence
+are available. See [live validation](docs/LIVE_VALIDATION_20260918.md) for exact
+measurements, encountered failures and operational limits.
 
 ## Team
 
@@ -68,19 +68,25 @@ python3 -m http.server 8768 --bind 127.0.0.1 --directory demo
 Open `http://127.0.0.1:8768/evidence.html`. This is an evidence export, not a live
 control dashboard. No recording or public demo URL has been supplied yet.
 
-Measured so far:
+Demonstrated with retained evidence:
 
-- In-cluster healthy v1: 7,001 ordinary requests, 100% success, 57.48 ms p95.
-- All 8,000 attempts including warmup reconciled, with zero dropped arrivals and
-  zero indexing failures. This was a latency check, not a frozen-contract trial.
-- A negative credential check returned INCONCLUSIVE when the verifier received
-  an unrestricted key. This is a credential refusal, not an SLO failure.
-- The Investigator and Briefer have answered against real historical evidence;
-  the Narrator refuses a run with no recorded verdict.
+- Scoped runtime separation: all 11 HTTP authorization checks passed.
+- PROVED: `demo-healthy-20260918-01` had 600 candidate requests per window,
+  100% success, and p95 57.23 / 57.28 / 57.34 ms across the three windows.
+  All 29,993 completed records reconciled, with no drops or indexing failures.
+- FAILED: `demo-slow-20260918-02` had 600 / 601 / 599 candidate requests in
+  three windows, all successful, but p95 507.54 / 507.69 / 507.62 ms. All
+  29,992 completed records reconciled, with no drops or indexing failures.
+- INCONCLUSIVE: `demo-slow-20260918-01` lacked an observed-route receipt after
+  conditional execution was refused. Missing evidence did not become a pass.
+- The three Bedrock agents explain both measured trials with saved query
+  citations. Their text remains advisory and requires review: retained early
+  outputs include a truncated narrative, a count-denominator wording error and
+  an overstatement of integrity-check scope.
 
-Still to demonstrate: a healthy PROVED trial, a slow-candidate FAILED trial,
-and insufficient-evidence behavior with scoped runtime credentials. These are
-not represented as complete in the evidence export.
+These results use generated traffic. No verdict automatically changes routing
+or closes the incident. The earlier 57.48 ms latency check is shown separately
+and is not relabeled as a recovery trial.
 
 Example query and agent question:
 
@@ -93,7 +99,8 @@ scripts/agent.sh ask --run-id demo-1 \
 ## What we used
 
 - Elastic: Elasticsearch Serverless, ES|QL, request/contract/ledger indices, and
-  API-key privilege checks. Runtime credential separation awaits scoped keys.
+  API-key privilege checks. Runtime credential separation is verified using
+  separate ingest, verifier and controller keys.
 - AWS: EKS, ECR, and Bedrock Converse; the agents default to GPT-OSS 120B.
 - Agent Builder: previously probed successfully, but the current reasoning path
   calls Bedrock directly because the tested connector could not accept the

@@ -1,0 +1,68 @@
+{
+  "run_id": "demo-healthy-20260918-01",
+  "config_hash": "2f584f88486c439d",
+  "pods": [
+    {
+      "pod": "checkout-v1-7898548fd8-8msmm",
+      "version_response": {
+        "config_hash": "2f584f88486c439d",
+        "effective_config": {
+          "service_name": "checkout",
+          "version": "v1",
+          "fault_profile": "healthy",
+          "run_id": "run-20260918T073812Z",
+          "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+          "port": 8080,
+          "base_latency_ms": 40,
+          "base_latency_jitter_ms": 15,
+          "fault_latency_ms": 0,
+          "fault_error_every_n": 0,
+          "fault_error_status": 500,
+          "request_timeout_ms": 3000,
+          "readiness_delay_ms": 2000,
+          "shutdown_grace_ms": 5000
+        },
+        "fault_profile": "healthy",
+        "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+        "profile_description": "Nominal checkout behaviour. p95 sits comfortably under the 300 ms contract threshold.",
+        "run_id": "run-20260918T073812Z",
+        "served": 0,
+        "service": "checkout",
+        "started_at": "2026-09-18T08:22:19.086897064Z",
+        "uptime_seconds": 23,
+        "version": "v1"
+      }
+    },
+    {
+      "pod": "checkout-v1-7898548fd8-t994q",
+      "version_response": {
+        "config_hash": "2f584f88486c439d",
+        "effective_config": {
+          "service_name": "checkout",
+          "version": "v1",
+          "fault_profile": "healthy",
+          "run_id": "run-20260918T073812Z",
+          "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+          "port": 8080,
+          "base_latency_ms": 40,
+          "base_latency_jitter_ms": 15,
+          "fault_latency_ms": 0,
+          "fault_error_every_n": 0,
+          "fault_error_status": 500,
+          "request_timeout_ms": 3000,
+          "readiness_delay_ms": 2000,
+          "shutdown_grace_ms": 5000
+        },
+        "fault_profile": "healthy",
+        "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+        "profile_description": "Nominal checkout behaviour. p95 sits comfortably under the 300 ms contract threshold.",
+        "run_id": "run-20260918T073812Z",
+        "served": 0,
+        "service": "checkout",
+        "started_at": "2026-09-18T08:22:14.060928378Z",
+        "uptime_seconds": 31,
+        "version": "v1"
+      }
+    }
+  ]
+}

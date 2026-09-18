@@ -36,3 +36,6 @@ build/
 
 # Local demo kubeconfig (never target a real cluster)
 .kube/
+.local-scratch/
+/steering_docs/
+/steering-docs/

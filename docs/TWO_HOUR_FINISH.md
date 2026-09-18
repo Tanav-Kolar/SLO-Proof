@@ -1,5 +1,10 @@
 # Two-hour finish plan
 
+Progress: scoped keys verified and live trials exercised. Use
+[live validation](LIVE_VALIDATION_20260918.md) for measured outcomes, not the
+historical fallback plan below. Final presentation, team names, recording and
+external submission remain operator tasks.
+
 Scope: demonstrate operator-supervised recovery verification using existing EKS,
 Elasticsearch, and Bedrock components. The current runner leaves routing unchanged
 after a verdict. Argo integration and automatic promotion are future work.

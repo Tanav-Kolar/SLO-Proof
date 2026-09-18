@@ -1,0 +1,7 @@
+{
+  "event": "fault_profile_changed",
+  "version": "v2",
+  "profile": "checkout-regression",
+  "changed_at": "2026-09-18T08:16:20Z",
+  "actor": "operator"
+}

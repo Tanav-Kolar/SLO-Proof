@@ -593,10 +593,10 @@
         <div class="note">
           <span class="label">The honest version</span>
           <p>
-            Checkout proves the routing and the evidence path, not the reuse. The verifier that turns
-            measurements into <span class="verdict v-proved">PROVED</span> does not exist yet
-            (<code>src/control/</code>), and three scripts still carry the name <code>checkout</code> in
-            code rather than in configuration. Both are listed under <a href="#gaps">known gaps</a>.
+            Checkout demonstrates the routing and evidence path, not general service reuse.
+            The deterministic verifier now exists in <code>src/control/</code>, but scripts and
+            manifests still carry checkout-specific names. This configurator produces examples;
+            it does not deploy a new service. See <a href="#gaps">known gaps</a>.
           </p>
         </div>
       </section>
@@ -760,7 +760,7 @@ printf 'contract %s frozen at %s\n' "$CONTRACT_HASH" "$FROZEN_AT"</pre>
             <span class="path">shell · one closed window, inclusive start and exclusive end</span>
             <button class="copy" type="button">Copy</button>
           </div>
-<pre>export WINDOW_START=<span class="s">'&lt;route_effective_at + convergence allowance&gt;'</span>
+<pre>export WINDOW_START=<span class="s">'&lt;observed route_effective_at&gt;'</span>
 export WINDOW_END=<span class="s">'&lt;WINDOW_START + <span class="v" data-k="verifySeconds">60</span>s&gt;'</span>
 
 elastic/query.sh evidence-completeness \
@@ -808,9 +808,10 @@ scripts/agent.sh ask --run-id <span class="v" data-k="agentRun4">demo-1</span> \
         </div>
         <p class="sec-body">
           The investigator can recommend, the narrator can explain an existing verdict, and the briefer can
-          answer questions with cited query IDs. None may write a verdict or patch the route. Promotion is a
-          separate executor action and is permitted only when a valid <span class="verdict v-proved">PROVED</span>
-          record names the expected contract hash, route UID, and current weights.
+          answer questions with cited query IDs. Their interfaces do not expose verdict creation or route
+          patching. A <span class="verdict v-proved">PROVED</span> result permits operator review of the
+          observed trial; automatic promotion is not implemented. Shared ledger-writer credentials are
+          not a cryptographic barrier against forged records.
         </p>
 
         <div class="note stop">
@@ -833,16 +834,16 @@ scripts/agent.sh ask --run-id <span class="v" data-k="agentRun4">demo-1</span> \
         <ol class="gap-list">
           <li>
             <div>
-              <h4>The deterministic control plane is not implemented</h4>
-              <p><code>src/control/</code> is absent. The repository has measurements, saved ES|QL queries, routing scripts, and agent advisories, but no program that freezes a contract, evaluates all windows, writes a verdict, or conditionally promotes.</p>
-              <p><strong>Close it:</strong> implement the verifier and ledger writer first; add the state machine and expiry watchdog after the two verdict scenarios are reproducible.</p>
+              <h4>Verification exists; autonomous recovery is not implemented</h4>
+              <p><code>src/control/</code> freezes contracts, conditionally starts a 10/90 trial, observes routing, evaluates three windows, and records a deterministic verdict. Every result leaves routing unchanged and the incident open.</p>
+              <p><strong>Close it:</strong> integrate operator-approved promotion and abort with an existing rollout controller, then add restart recovery and an independent expiry watchdog. See <a href="LIVE_VALIDATION_20260918.md">retained live validation</a>.</p>
             </div>
           </li>
           <li>
             <div>
-              <h4>The load generator is not packaged for in-cluster execution</h4>
-              <p>The first real run measured from the operator laptop and added enough network latency to fail healthy v1. There is no load-generator image or Kubernetes workload in this repository yet.</p>
-              <p><strong>Close it:</strong> build and deploy loadgen beside the gateway, then measure index-visibility lag and replace the provisional <span data-k="gapLag">30</span>-second allowance.</p>
+              <h4>Measurement vantage and ingestion lag need service-specific validation</h4>
+              <p>The load generator now runs as an in-cluster Kubernetes Job using a digest-pinned image. This avoids including the operator laptop's network latency, but does not represent every production client's experience.</p>
+              <p><strong>Close it:</strong> choose the intended client vantage for each service and measure index-visibility lag before replacing the provisional <span data-k="gapLag">30</span>-second allowance in a new contract.</p>
             </div>
           </li>
           <li>
@@ -854,9 +855,9 @@ scripts/agent.sh ask --run-id <span class="v" data-k="agentRun4">demo-1</span> \
           </li>
           <li>
             <div>
-              <h4>Route effectiveness is not observed automatically</h4>
-              <p>Weight receipts correctly leave <code>route_effective_at</code> null, but no controller fills it from served-traffic evidence. A patched HTTPRoute therefore cannot start a verification window by itself.</p>
-              <p><strong>Close it:</strong> require a stable observed split before stamping the effective time, and bind that observation to the receipt's route UID and resourceVersion.</p>
+              <h4>Observed route effectiveness is a bounded heuristic</h4>
+              <p>The observer derives the effective timestamp from three consecutive traffic seconds with at least 40 requests each and a pooled candidate share within five percentage points of the requested split. The verifier independently re-derives this anchor.</p>
+              <p><strong>Close it:</strong> validate this heuristic for production traffic patterns and continue observing after expansion. A measured cohort does not guarantee future routing stability.</p>
             </div>
           </li>
           <li>
@@ -1302,8 +1303,8 @@ export CHECKOUT_IMAGE=<span class="c">'&lt;acct&gt;.dkr.ecr.<span class="v" data
             <tbody>
               <tr><td>Healthy baseline</td><td class="key">set-weights.sh 100 0</td><td class="num">100 / 0</td><td class="dim">operator</td></tr>
               <tr><td>Incident</td><td class="key">set-weights.sh 0 100</td><td class="num">0 / 100</td><td class="dim">operator — label it manual unless detection is automated</td></tr>
-              <tr><td>Recovery trial</td><td class="key">set-weights.sh 10 90</td><td class="num">10 / 90</td><td class="dim">executor, on an allowed action</td></tr>
-              <tr><td>Promotion</td><td class="key">set-weights.sh 100 0</td><td class="num">100 / 0</td><td class="dim">executor, only on <span class="verdict v-proved">PROVED</span></td></tr>
+              <tr><td>Recovery trial</td><td class="key">control.sh trial --run-id &lt;frozen-run&gt;</td><td class="num">10 / 90</td><td class="dim">restricted executor; conditional patch</td></tr>
+              <tr><td>Expansion (not part of runner)</td><td class="key">set-weights.sh 100 0</td><td class="num">100 / 0</td><td class="dim">manual operator decision; this raw setup command does not enforce a verdict gate</td></tr>
             </tbody>
           </table>
         </div>
@@ -1368,9 +1369,9 @@ src/loadgen/loadgen \
             was running trans-Pacific.
           </p>
           <p>
-            Put the vantage point next to the service, or the contract measures the demo operator's
-            geography. Until the generator runs in-cluster, no run can produce
-            <span class="verdict v-proved">PROVED</span>.
+            The generator now runs in-cluster for these trials. Choose the vantage point according to
+            the intended service contract: an in-cluster pass does not establish latency for remote
+            production users. See <a href="LIVE_VALIDATION_20260918.md">retained live results</a>.
           </p>
         </div>
 

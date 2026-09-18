@@ -1,0 +1,60 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "recorded_at": "2026-09-18T08:24:52.064749+00:00",
+  "scope": "AI advisory and explanation; no routing action",
+  "investigator": {
+    "action": "hold",
+    "target_version": null,
+    "proposed_weights": null,
+    "confidence": "high",
+    "rationale": "In the observed window, v1 handled 600 requests with a 100% success rate but its p95 latency was 507.5\u202fms, exceeding the 300\u202fms limit. v2 handled 5,398 requests with an 80.0% success rate and a p95 latency of 857.6\u202fms, violating both the success\u2011rate (0.99) and latency thresholds. Because neither version meets the latency SLO, and v2 also fails the success\u2011rate SLO, the safest recommendation is to hold traffic as\u2011is.",
+    "measurements": [
+      {
+        "version": "v1",
+        "requests": 600,
+        "success_rate": 1.0,
+        "p95_ms": 507.5396
+      },
+      {
+        "version": "v2",
+        "requests": 5398,
+        "success_rate": 0.8001111522786217,
+        "p95_ms": 857.6078
+      }
+    ],
+    "cited_query_ids": [
+      "evidence-completeness@47da042a71b2",
+      "window-metrics@3fb039436762"
+    ],
+    "blocking_concerns": [
+      "v1 p95 latency (507.5\u202fms) exceeds the 300\u202fms maximum",
+      "v2 p95 latency (857.6\u202fms) exceeds the 300\u202fms maximum",
+      "v2 success rate (0.80) below the 0.99 minimum"
+    ],
+    "_validation": {
+      "ok": true,
+      "problems": []
+    },
+    "_evidence": {
+      "query_ids": [
+        "evidence-completeness@47da042a71b2",
+        "traffic-split@d9dcb402e091",
+        "window-metrics@3fb039436762"
+      ],
+      "window_start": "2026-09-18T08:16:55.99Z",
+      "window_end": "2026-09-18T08:17:55.99Z"
+    },
+    "_model": "openai.gpt-oss-120b-1:0"
+  },
+  "narrator": {
+    "stdout": "The deterministic verifier marked v1 as\u202fFAILED because its 95th\u2011percentile latency exceeded the contract maximum in every evaluation window. In the first window (08:16:55.99\u202f\u2013\u202f08:17:55.99\u202fZ) v1 handled 600 requests with a p95 of\u202f507.5396\u202fms, and the same breach persisted in the second window (601 requests, p95\u202f=\u202f507.694\u202fms) and the third window (599 requests, p95\u202f=\u202f507.6235\u202fms). v1 kept a perfect success",
+    "diagnostics": "cited: incident-timeline@c6b943c18a54, outcome-breakdown@3a80d32f212f\nledger: agent_narrative tfyes6ABlxOEEDbrOAxK",
+    "exit_code": 0
+  },
+  "briefer": {
+    "stdout": "The **window\u2011metrics** query for the interval\u202f2026\u201109\u201118T08:16:55.99Z\u202fto\u202f2026\u201109\u201118T08:17:55.99Z (run\u202f`demo\u2011slow\u201120260918\u201102`) returned:\n\n* **v1** \u2013 success\u202frate\u202f**1.0** (100\u202f%) and p95\u202f**507.5396\u202fms** (600 requests, all successful).  \n* **v2** \u2013 success\u202frate\u202f**0.8001111522786217** (\u2248\u202f80\u202f%) and p95\u202f**857.6078\u202fms** (5\u202f398 requests, 4\u202f319 successful).\n\nThese figures are trial measurements from a bounded 1\u2011minute observation window; they reflect only the traffic that happened during that slice and may not represent longer\u2011term behavior, load\u2011distribution changes, or rare failure modes. The data come from the `window-metrics` query run above.",
+    "diagnostics": "cited: window-metrics@3fb039436762",
+    "exit_code": 0
+  },
+  "investigator_diagnostics": "ledger: agent_advisory svyes6ABlxOEEDbrDQwD"
+}

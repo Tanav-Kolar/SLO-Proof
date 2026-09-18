@@ -1,0 +1,14 @@
+{
+  "achieved_rps": 99.3,
+  "arrivals": 29990,
+  "bulk_calls": 151,
+  "completed": 29990,
+  "dropped_arrivals": 0,
+  "elapsed_seconds": 302,
+  "indexed_failed": 0,
+  "indexed_ok": 29990,
+  "reconciled": false,
+  "run_id": "demo-slow-20260918-01",
+  "searchable_in_es": -1,
+  "target_rps": 100
+}

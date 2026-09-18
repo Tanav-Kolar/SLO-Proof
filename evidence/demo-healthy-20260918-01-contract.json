@@ -1,0 +1,157 @@
+{
+  "@timestamp": "2026-09-18T08:22:55.349105Z",
+  "run_id": "demo-healthy-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "frozen_at": "2026-09-18T08:22:55.349105Z",
+  "frozen_by": "controller",
+  "service": "checkout",
+  "contract": {
+    "contract_version": "1.0",
+    "service": "checkout",
+    "endpoint": "/checkout",
+    "description": "Acceptance criteria for the checkout recovery trial. Frozen and written to sloproof-contracts BEFORE any routing change. Never edited mid-run; a change mid-run invalidates the trial.",
+    "observation": {
+      "window_count": 3,
+      "window_seconds": 60,
+      "overlapping": false,
+      "anchor": "executor_receipt.route_effective_at",
+      "route_convergence_allowance_seconds": 30
+    },
+    "eligibility": {
+      "traffic_class": [
+        "ordinary"
+      ],
+      "exclude_traffic_class": [
+        "synthetic",
+        "warmup"
+      ],
+      "min_samples_per_window": 400
+    },
+    "criteria": {
+      "success_rate_min": 0.99,
+      "p95_latency_ms_max": 300,
+      "percentile_method": "tdigest",
+      "timeout_counts_as": "failure",
+      "http_success_statuses": [
+        200
+      ]
+    },
+    "freshness": {
+      "ingestion_lag_allowance_seconds": 30,
+      "empty_result_is_never_zero_errors": true
+    },
+    "verdicts": {
+      "all_windows_pass": "PROVED",
+      "measured_breach": "FAILED",
+      "missing_stale_or_underpowered": "INCONCLUSIVE"
+    },
+    "limits": [
+      "Demo acceptance rules, not a statistical guarantee of future production reliability.",
+      "Success and latency only. The four-query contract in the architecture PDF (synthetics, OOM, dependency error rates) is not implemented in this scope.",
+      "Trial success at 10% is not evidence that v1 sustains 100% of traffic; post-promotion windows are measured separately against the same absolute criteria."
+    ]
+  },
+  "contract_source": "{\n  \"contract_version\": \"1.0\",\n  \"service\": \"checkout\",\n  \"endpoint\": \"/checkout\",\n  \"description\": \"Acceptance criteria for the checkout recovery trial. Frozen and written to sloproof-contracts BEFORE any routing change. Never edited mid-run; a change mid-run invalidates the trial.\",\n\n  \"observation\": {\n    \"window_count\": 3,\n    \"window_seconds\": 60,\n    \"overlapping\": false,\n    \"anchor\": \"executor_receipt.route_effective_at\",\n    \"route_convergence_allowance_seconds\": 30\n  },\n\n  \"eligibility\": {\n    \"traffic_class\": [\"ordinary\"],\n    \"exclude_traffic_class\": [\"synthetic\", \"warmup\"],\n    \"min_samples_per_window\": 400\n  },\n\n  \"criteria\": {\n    \"success_rate_min\": 0.99,\n    \"p95_latency_ms_max\": 300,\n    \"percentile_method\": \"tdigest\",\n    \"timeout_counts_as\": \"failure\",\n    \"http_success_statuses\": [200]\n  },\n\n  \"freshness\": {\n    \"ingestion_lag_allowance_seconds\": 30,\n    \"empty_result_is_never_zero_errors\": true\n  },\n\n  \"verdicts\": {\n    \"all_windows_pass\": \"PROVED\",\n    \"measured_breach\": \"FAILED\",\n    \"missing_stale_or_underpowered\": \"INCONCLUSIVE\"\n  },\n\n  \"limits\": [\n    \"Demo acceptance rules, not a statistical guarantee of future production reliability.\",\n    \"Success and latency only. The four-query contract in the architecture PDF (synthetics, OOM, dependency error rates) is not implemented in this scope.\",\n    \"Trial success at 10% is not evidence that v1 sustains 100% of traffic; post-promotion windows are measured separately against the same absolute criteria.\"\n  ]\n}\n",
+  "candidate_config_hash": "2f584f88486c439d",
+  "query_hashes": {
+    "evidence-completeness": "1bbf033c364e5283e482597711aaade0ec0e112c95103cb1b1c1f321fb26179b",
+    "window-metrics": "fa99b2d6bd4417653665e35888cb98d44f9f87fe5e601bcd883c49077ae29511"
+  },
+  "route_snapshot": {
+    "metadata": {
+      "name": "checkout-route",
+      "namespace": "checkout",
+      "uid": "92094228-dbf6-4751-b787-f9e397212b63",
+      "resourceVersion": "25412"
+    },
+    "spec": {
+      "rules": [
+        {
+          "backendRefs": [
+            {
+              "group": "",
+              "kind": "Service",
+              "name": "checkout-v1",
+              "port": 80,
+              "weight": 1
+            }
+          ],
+          "matches": [
+            {
+              "headers": [
+                {
+                  "name": "x-sloproof-target",
+                  "type": "Exact",
+                  "value": "v1"
+                }
+              ],
+              "path": {
+                "type": "PathPrefix",
+                "value": "/checkout"
+              }
+            }
+          ]
+        },
+        {
+          "backendRefs": [
+            {
+              "group": "",
+              "kind": "Service",
+              "name": "checkout-v2",
+              "port": 80,
+              "weight": 1
+            }
+          ],
+          "matches": [
+            {
+              "headers": [
+                {
+                  "name": "x-sloproof-target",
+                  "type": "Exact",
+                  "value": "v2"
+                }
+              ],
+              "path": {
+                "type": "PathPrefix",
+                "value": "/checkout"
+              }
+            }
+          ]
+        },
+        {
+          "backendRefs": [
+            {
+              "group": "",
+              "kind": "Service",
+              "name": "checkout-v1",
+              "port": 80,
+              "weight": 0
+            },
+            {
+              "group": "",
+              "kind": "Service",
+              "name": "checkout-v2",
+              "port": 80,
+              "weight": 100
+            }
+          ],
+          "matches": [
+            {
+              "path": {
+                "type": "PathPrefix",
+                "value": "/checkout"
+              }
+            }
+          ]
+        }
+      ],
+      "parentRefs": [
+        {
+          "group": "gateway.networking.k8s.io",
+          "kind": "Gateway",
+          "name": "checkout-gateway"
+        }
+      ]
+    }
+  }
+}

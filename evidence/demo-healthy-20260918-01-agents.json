@@ -1,0 +1,58 @@
+{
+  "run_id": "demo-healthy-20260918-01",
+  "attempt": 1,
+  "recorded_at": "2026-09-18T08:28:56.800258+00:00",
+  "scope": "AI advisory and explanation; no routing action",
+  "investigator": {
+    "action": "hold",
+    "target_version": null,
+    "proposed_weights": null,
+    "confidence": "high",
+    "rationale": "In the observed window, v1 handled 600 requests with a 100% success rate and a p95 latency of 57\u202fms, satisfying both the 0.99 success\u2011rate minimum and the 300\u202fms latency ceiling. v2, however, processed 5,398 requests with only a 79.99% success rate and a p95 latency of 858\u202fms, violating both thresholds. All completeness checks passed (\u2265400 requests per version and a single config hash).",
+    "measurements": [
+      {
+        "version": "v1",
+        "requests": 600,
+        "success_rate": 1.0,
+        "p95_ms": 57.2282
+      },
+      {
+        "version": "v2",
+        "requests": 5398,
+        "success_rate": 0.7999258984809189,
+        "p95_ms": 857.58545
+      }
+    ],
+    "cited_query_ids": [
+      "evidence-completeness@eb4effad6fa8",
+      "window-metrics@329a8101be7a",
+      "traffic-split@1868d4551174"
+    ],
+    "blocking_concerns": [],
+    "_validation": {
+      "ok": true,
+      "problems": []
+    },
+    "_evidence": {
+      "query_ids": [
+        "evidence-completeness@eb4effad6fa8",
+        "traffic-split@1868d4551174",
+        "window-metrics@329a8101be7a"
+      ],
+      "window_start": "2026-09-18T08:23:14.99Z",
+      "window_end": "2026-09-18T08:24:14.99Z"
+    },
+    "_model": "openai.gpt-oss-120b-1:0"
+  },
+  "narrator": {
+    "stdout": "The deterministic verifier marked version\u202fv1 as\u202fPROVED because in each of the three frozen one\u2011minute windows it received exactly 600 requests, all of which succeeded (success\u202frate\u202f1) and the 95th\u2011percentile latency stayed around 57\u202fms (57.228\u202fms, 57.284\u202fms, 57.344\u202fms). By contrast, version\u202fv2 handled roughly 5\u202f400\u202f\u2013\u202f5\u202f400\u202frequests per window, succeeded only about 80\u202f% of the time (success\u202frate\u202f\u2248\u202f0.80) and showed a 95th\u2011percentile latency near 858\u202fms, while the outcome\u2011breakdown shows that the dominant failure mode for v2 was HTTP\u202f500 errors (5\u202f436 such responses). The traffic shift that introduced the v1 cohort is first visible in the 15\u2011second bucket starting\u202f2026\u201109\u201118T08:23:00Z, where v1 appears with 31 requests at a perfect success rate while v2 continues with 1\u202f467 requests at a 0.8003 success rate. Across the entire run the evidence\u2011integrity checks report zero invalid, wrong\u2011config, or unknown\u2011version records, confirming the data are clean. Consequently, the contract is satisfied for v1 in the observed trial, and the operator must decide whether to expand its traffic.",
+    "diagnostics": "cited: incident-timeline@515a60439563, outcome-breakdown@7fd7ea1c3798\nledger: agent_narrative a_yhs6ABlxOEEDbr7A2j",
+    "exit_code": 0
+  },
+  "briefer": {
+    "stdout": "The **window\u2011metrics** query for the interval\u202f2026\u201109\u201118T08:23:14.99Z\u202fto\u202f2026\u201109\u201118T08:24:14.99Z (run\u202f`demo-healthy-20260918-01`) returned:\n\n* **v1** \u2013 success\u202frate\u202f**1.0** (100\u202f%) and p95\u202f**57.2282\u202fms**.  \n* **v2** \u2013 success\u202frate\u202f**0.7999258984809189** (\u2248\u202f80\u202f%) and p95\u202f**857.58545\u202fms**.\n\nThese figures come from a bounded trial window, not from full\u2011load production; they reflect the traffic that happened during the one\u2011minute slice and may not capture longer\u2011term variability or load\u2011scale effects. The measurement limits are the sample size (600\u202fv1 requests, 5\u202f398\u202fv2 requests) and the fact that routing was static for the trial, so the results are only indicative of performance under the observed conditions. (Query run: `window-metrics` with the specified start/end and run\u202fID.)",
+    "diagnostics": "cited: window-metrics@329a8101be7a",
+    "exit_code": 0
+  },
+  "investigator_diagnostics": "ledger: agent_advisory Zvyhs6ABlxOEEDbrwA3y"
+}

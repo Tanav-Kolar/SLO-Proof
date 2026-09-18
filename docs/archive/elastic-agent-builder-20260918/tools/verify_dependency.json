@@ -1,0 +1,15 @@
+{
+  "id": "verify_dependency",
+  "type": "esql",
+  "description": "Trace-level check: is the failing dependency (checkout -> quote) still producing errors since a given window start. Verifier-only.",
+  "tags": [],
+  "configuration": {
+    "query": "FROM traces-*.otel-* | WHERE span.name == \"checkout -> quote\" AND status.code == \"Error\" AND @timestamp >= ?window_start | STATS bad = COUNT(*)",
+    "params": {
+      "window_start": {
+        "type": "date",
+        "description": "Start of the verification window, bound to the executor's receipt applied_at timestamp, not now-minus-N-minutes"
+      }
+    }
+  }
+}

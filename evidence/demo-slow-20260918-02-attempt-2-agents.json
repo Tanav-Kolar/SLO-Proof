@@ -1,0 +1,60 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "attempt": 2,
+  "recorded_at": "2026-09-18T08:26:08.373964+00:00",
+  "scope": "AI advisory and explanation; no routing action",
+  "investigator": {
+    "action": "hold",
+    "target_version": null,
+    "proposed_weights": null,
+    "confidence": "high",
+    "rationale": "Version v1 meets the success\u2011rate threshold (1.0\u202f\u2265\u202f0.99) but its p95 latency of 507.5\u202fms exceeds the 300\u202fms limit, so it does not satisfy the contract; version v2 fails both success\u2011rate (0.80\u202f<\u202f0.99) and latency (857.6\u202fms\u202f>\u202f300\u202fms). Because the recovery candidate cannot meet the latency requirement, we should keep the current traffic distribution and not promote v1.",
+    "measurements": [
+      {
+        "version": "v1",
+        "requests": 600,
+        "success_rate": 1.0,
+        "p95_ms": 507.5396
+      },
+      {
+        "version": "v2",
+        "requests": 5398,
+        "success_rate": 0.8001111522786217,
+        "p95_ms": 857.6078
+      }
+    ],
+    "cited_query_ids": [
+      "evidence-completeness@47da042a71b2",
+      "window-metrics@3fb039436762",
+      "traffic-split@d9dcb402e091"
+    ],
+    "blocking_concerns": [
+      "v1 p95 latency 507.5\u202fms exceeds the 300\u202fms contract limit"
+    ],
+    "_validation": {
+      "ok": true,
+      "problems": []
+    },
+    "_evidence": {
+      "query_ids": [
+        "evidence-completeness@47da042a71b2",
+        "traffic-split@d9dcb402e091",
+        "window-metrics@3fb039436762"
+      ],
+      "window_start": "2026-09-18T08:16:55.99Z",
+      "window_end": "2026-09-18T08:17:55.99Z"
+    },
+    "_model": "openai.gpt-oss-120b-1:0"
+  },
+  "narrator": {
+    "stdout": "The deterministic verifier marked the recovery candidate\u202fv1 as\u202fFAILED because its 95th\u2011percentile latency stayed above the contract limit in every evaluation window \u2013 the first window (08:16:55.99\u202fZ\u202fto\u202f08:17:55.99\u202fZ) recorded a p95 of\u202f507.5396\u202fms for 600 requests, the second (08:17:55.99\u202fZ\u202fto\u202f08:18:55.99\u202fZ) a p95 of\u202f507.694\u202fms for 601 requests, and the third (08:18:55.99\u202fZ\u202fto\u202f08:19:55.99\u202fZ) a p95 of\u202f507.6235\u202fms for 599 requests. The dominant failure mode is this latency breach, which is visible from the very first 15\u2011second bucket after traffic was shifted (the bucket starting at\u202f08:16:55.000\u202fZ shows v1\u202fp95\u202f\u2248\u202f507\u202fms while v2\u2019s p95 is \u2248\u202f858\u202fms). Although the incident version\u202fv2 also generated many HTTP\u202f500 errors (5\u202f427\u202ffailed requests out of 21\u202f714 successes), those errors do not affect the candidate\u2019s verdict because the contract\u2019s failure condition was the p95 latency exceedance. Consequently, routing remains unchanged and the incident stays open, with the operator required to decide the next mitigation step.",
+    "diagnostics": "cited: incident-timeline@c6b943c18a54, outcome-breakdown@3a80d32f212f\nledger: agent_narrative 5fyfs6ABlxOEEDbrWQxk",
+    "exit_code": 0
+  },
+  "briefer": {
+    "stdout": "The **window\u2011metrics** query for the interval\u202f2026\u201109\u201118T08:16:55.99Z\u202fto\u202f2026\u201109\u201118T08:17:55.99Z (run\u202f`demo\u2011slow\u201120260918\u201102`) returned:\n\n* **v1** \u2013 success\u202frate\u202f**1.0** (100\u202f%) and p95\u202f**507.5396\u202fms** (600 requests, all successful).  \n* **v2** \u2013 success\u202frate\u202f**0.8001111522786217** (\u2248\u202f80\u202f%) and p95\u202f**857.6078\u202fms** (5\u202f398 requests, 4\u202f319 successful).\n\nThese figures are trial measurements from a bounded 1\u2011minute observation window; they reflect only the traffic that happened during that slice and may not represent longer\u2011term behavior, load\u2011distribution changes, or rare failure modes. The data come from the `window-metrics` query run above.",
+    "diagnostics": "cited: window-metrics@3fb039436762",
+    "exit_code": 0
+  },
+  "investigator_diagnostics": "ledger: agent_advisory 3vyfs6ABlxOEEDbrFQy-"
+}

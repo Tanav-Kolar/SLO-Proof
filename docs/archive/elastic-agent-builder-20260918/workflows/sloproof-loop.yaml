@@ -1,0 +1,178 @@
+version: '1'
+name: sloproof-loop
+description: 'SLOProof automated SLO-recovery loop: investigate a burning checkout SLO, freeze a bounded remediation contract, trial it immediately with no human pre-approval, verify fresh telemetry against the frozen contract, promote silently on PROVED or roll back and alert on FAILED/INCONCLUSIVE, and record a ledger entry every run.'
+enabled: true
+triggers:
+- type: alerting.ruleEventsGenerated
+  on:
+    condition: 'event.rule.id: "sloproof-burn-detection"'
+- type: manual
+consts:
+  sli_thresholds:
+    success_rate_min: 0.99
+    p95_latency_ms_max: 300
+  observation_window:
+    window_count: 3
+    window_seconds: 60
+  min_sample_size: 400
+steps:
+- name: investigate
+  type: ai.agent
+  agent-id: sloproof_investigator
+  with:
+    message: A checkout SLO is burning. Diagnose the incident and propose a bounded remediation.
+    schema:
+      type: object
+      properties:
+        action:
+          type: string
+        target_route:
+          type: string
+        weights:
+          type: object
+        confidence:
+          type: number
+        blast_radius:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              claim:
+                type: string
+              esql:
+                type: string
+              value:
+                type: string
+      required:
+      - action
+      - target_route
+      - weights
+      - confidence
+      - blast_radius
+      - evidence
+- name: freeze_contract
+  type: elasticsearch.index
+  with:
+    index: sloproof-contracts
+    op_type: create
+    document:
+      contract_uid: '{{ execution.id }}'
+      service: checkout
+      incident_class: checkout_slo_burn
+      action: '{{ steps.investigate.output.structured_output.action }}'
+      target_route: '{{ steps.investigate.output.structured_output.target_route }}'
+      sli_thresholds:
+        success_rate_min: 0.99
+        p95_latency_ms_max: 300
+      observation_window:
+        window_count: 3
+        window_seconds: 60
+      min_sample_size: 400
+      criteria_hash: '{{ steps.investigate.output.message | sha256 }}'
+      created_at: "{{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' }}"
+- name: write_evidence
+  type: foreach
+  foreach: '{{ steps.investigate.output.structured_output.evidence }}'
+  steps:
+  - name: write_evidence_item
+    type: elasticsearch.index
+    with:
+      index: sloproof-evidence
+      document:
+        contract_uid: '{{ execution.id }}'
+        evidence_id: '{{ execution.id }}-{{ foreach.index }}'
+        claim: '{{ foreach.item.claim }}'
+        esql: '{{ foreach.item.esql }}'
+        produced_at: "{{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' }}"
+- name: trial_execute
+  type: http
+  connector-id: checkout-remediation-api
+  with:
+    path: /execute
+    method: POST
+    body:
+      contract_uid: '{{ execution.id }}'
+      target_route: '{{ steps.investigate.output.structured_output.target_route }}'
+      weights: '{{ steps.investigate.output.structured_output.weights | json }}'
+  on-failure:
+    continue: true
+- name: verify
+  type: ai.agent
+  agent-id: sloproof_verifier
+  with:
+    message: '{% if steps.trial_execute.status == ''failed'' %}The trial execution step failed and no routing change was confirmed applied. You have no valid window_start to anchor your checks. Return INCONCLUSIVE.{% else %}Judge this frozen contract against fresh telemetry.
+
+      Frozen contract (sli_thresholds): {{ consts.sli_thresholds | json }}
+
+      min_sample_size: {{ consts.min_sample_size }}
+
+      window_start (anchor all checks here, not now-minus-N-minutes): {{ steps.trial_execute.output.receipt.applied_at }}
+
+      Run verify_error_rate, verify_latency, and verify_dependency each with window_start = the value above, then return your verdict.{% endif %}'
+    schema:
+      type: object
+      properties:
+        verdict:
+          type: string
+          enum:
+          - PROVED
+          - FAILED
+          - INCONCLUSIVE
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              result:
+                type: string
+              detail:
+                type: string
+      required:
+      - verdict
+      - checks
+  on-failure:
+    continue: true
+- name: rollback
+  type: http
+  connector-id: checkout-remediation-api
+  if: 'not steps.verify.output.structured_output.verdict : "PROVED"'
+  with:
+    path: /rollback
+    method: POST
+    body:
+      contract_uid: '{{ execution.id }}'
+      rollback_token: '{{ steps.trial_execute.output.receipt.rollback_token }}'
+  on-failure:
+    continue: true
+- name: notify_slack
+  type: slack_api.postMessage
+  connector-id: sloproof-slack-alerts
+  if: 'not steps.verify.output.structured_output.verdict : "PROVED"'
+  with:
+    channelNames:
+    - '#REPLACE-ME-channel'
+    text: 'SLOProof: checkout remediation NOT PROVED (verdict={{ steps.verify.output.structured_output.verdict }}). Contract {{ execution.id }} rolled back. Checks: {{ steps.verify.output.structured_output.checks | json }}'
+  on-failure:
+    continue: true
+- name: write_ledger
+  type: elasticsearch.index
+  with:
+    index: sloproof-ledger
+    document:
+      service: checkout
+      incident_class: checkout_slo_burn
+      action: '{{ steps.investigate.output.structured_output.action }}'
+      verdict: '{{ steps.verify.output.structured_output.verdict }}'
+      approver: none
+      confidence: '{{ steps.investigate.output.structured_output.confidence }}'
+      execution_receipt: '{{ steps.trial_execute.output.receipt | json }}'
+      proposal_accepted: true
+      action_success: '{{ steps.trial_execute.status == ''completed'' }}'
+      verification_success: "{{ steps.verify.output.structured_output.verdict == 'PROVED' }}"
+      rolled_back: "{{ steps.verify.output.structured_output.verdict != 'PROVED' }}"
+      approval_age_sec: 0
+      recorded_at: "{{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' }}"

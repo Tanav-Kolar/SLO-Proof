@@ -1,9 +1,10 @@
 # Deterministic control plane
 
-This code is implemented and locally tested. **Live PROVED / FAILED verdicts
-have not yet been demonstrated:** the scoped Elasticsearch credentials are
-missing. Do not present unit-test fixtures or the D9 latency measurement as a
-frozen-contract trial.
+This code is implemented and locally tested. Scoped credentials pass all 11
+authorization checks, and live trial results are retained in
+[the validation report](../../docs/LIVE_VALIDATION_20260918.md).
+Do not confuse unit-test fixtures or the earlier D9 latency measurement with
+frozen-contract trials.
 
 `cmd/verifier` is a separate read-only process. `scripts/control.sh verify`
 launches it with an allowlisted environment containing only PATH, endpoint and
@@ -87,8 +88,7 @@ scripts/verify-run.sh
 Exit codes: verifier 0 = PROVED, 2 = FAILED or INCONCLUSIVE; configuration/IO
 errors return 1. `record` appends the verdict to `sloproof-ledger`. `verify-run.sh`
 collects the completed Job's actual log, invokes the separate verifier and records
-its output. No verdict is currently claimed for this workflow until scoped-key
-live trials pass.
+its output. See the validation report for actual run IDs and measured outcomes.
 
 Validation: `cd src/control && go test -race ./... && go vet ./...`.
 
@@ -104,5 +104,4 @@ that result must never automatically send traffic back to a worse version.
 
 `scripts/run-trial.sh healthy|bad-recovery <unique-run-id>` implements one
 operator-supervised scenario and `scripts/render-evidence.py` builds its read-only
-presentation view. See `docs/DEMO_RUNBOOK.md`. Full orchestration still needs live
-validation after scoped credentials are supplied.
+presentation view. See `docs/DEMO_RUNBOOK.md` and the retained live validation.
