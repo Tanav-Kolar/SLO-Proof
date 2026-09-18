@@ -46,6 +46,6 @@ retain earlier generated answers with known errors. AI text remains advisory.
 Use the full repository and `elastic/README.md` for live workflow commands;
 the portable ZIP is an evidence bundle, not a complete deployment package.
 
-To rebuild both HTML pages from source, run `python3 scripts/render-evidence.py`
+To rebuild all three HTML pages from source, run `python3 scripts/render-evidence.py`
 from the full repository root. The generated pages also work directly from disk
 after extracting the portable bundle.
