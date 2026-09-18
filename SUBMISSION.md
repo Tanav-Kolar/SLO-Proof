@@ -64,6 +64,12 @@ The teams with this problem are platform and SRE groups already doing progressiv
 delivery. They have the routing controls and they have the telemetry. What they lack
 is an answer to "is it fixed?" that survives the postmortem.
 
+Nothing about that is specific to checkout. Any service whose recovery can be stated
+as a threshold over client-observed requests has this problem, and checkout is our
+demonstration vehicle rather than our scope — see
+[onboarding another service](#onboarding-another-service) for what transfers and what
+is still pinned to the demo.
+
 ## How SLOProof answers it
 
 Each of those four properties maps to a mechanism, not a promise.
@@ -266,22 +272,46 @@ Running it live, the presenter script and the stage-by-stage process view are al
 [the showcase script](docs/SHOWCASE_SCRIPT.md) and
 [`demo/process.html`](demo/process.html).
 
-## Applying it to another service
+## Onboarding another service
 
-The acceptance criteria live in [`contracts/checkout-slo.json`](contracts/checkout-slo.json):
-window count and length, minimum samples, thresholds, eligible traffic classes,
-freshness allowances. The verifier refuses to reinterpret a contract it does not
-recognise, so changing a threshold is a reviewable diff rather than a code change.
+The decision machinery is service-agnostic by construction. The deployment adapter
+around it is not yet, and the boundary is worth stating exactly, because "works for
+any service" is the sort of claim that should come with a file list.
 
-[The operator setup guide](docs/configure-a-service.html) covers what a load generator
-must emit, the index mappings, the scoped credential set, the route shape the executor
-expects, and the queries the verifier runs. The initial customer is a platform or SRE
-team already on Kubernetes with Gateway API and Elastic.
+**Transfers unchanged.** The contract schema — window count and length, minimum
+samples, success and latency thresholds, eligible traffic classes, freshness
+allowances. The evidence document shape. The three-key credential separation. The
+ledger, the rollout policy, and the 10/25/50/100 staging. Window evaluation,
+reconciliation, the observed-share check, and INCONCLUSIVE semantics. The Elastic
+tools, agents and `sloproof-loop` workflow, which are parameterised by run ID and
+never mention checkout. None of that reasons about what the service does — only
+about whether its measured requests met a frozen threshold.
 
-Reusable as-is: the contract schema, the ES|QL evidence queries, the credential
-separation model, the ledger shape, the rollout policy. Service-specific: the checkout
-fault profiles, the two-backend HTTPRoute shape, and the convention that v1 is the
-candidate.
+**A new service supplies** a client vantage that emits the request document, two
+deployable versions behind one weighted route, its own thresholds, and an
+index-visibility measurement to replace the provisional 30-second ingestion
+allowance. [The operator setup guide](docs/configure-a-service.html) walks each of
+those.
+
+**Still pinned to the demo**, and enumerable:
+
+| What | Where |
+|---|---|
+| Contract must declare `checkout` / `/checkout` | `src/control/contract.go:62` |
+| Route `checkout-route`, namespace `checkout`, path `/checkout` | `src/control/executor.go:35,56` |
+| Backends named `checkout-v1` / `checkout-v2` | `src/control/executor.go:84` |
+| Integrity query filters `service != "checkout"` | `src/control/verifier.go:62` |
+| The convention that v1 is the candidate | throughout |
+
+Those are literals, not assumptions baked into the logic — the contract already
+carries `service` and `endpoint` as data, the validator just compares them to
+constants instead of reading them. Unpinning them is a bounded change, and the
+honest status today is the one our own guide gives: service reuse is documented,
+not automated. We would rather say that than claim a generality a judge can
+disprove by opening one file.
+
+The initial customer is a platform or SRE team already on Kubernetes with Gateway
+API and Elastic.
 
 ## Stack
 
@@ -294,46 +324,3 @@ candidate.
 Agent Builder uses Elastic's configured model connector, which is a different path
 from the direct Bedrock agents; the Kibana Bedrock connector could not accept the
 workshop credentials' session token. Sarvam and SageMaker are not used.
-
-## Validation
-
-- `go vet ./...` clean and `go test -race ./...` passing in both `src/control` and
-  `src/checkout`, covering window evaluation, the observed-share check, rollout
-  progression guards and retry classification.
-- 22 boundary tests on the Elastic integration: unbounded queries, ungated agents,
-  missing decision gates, notification branches that can be dropped, AI prose
-  supplying an operational alert, and run-ID injection are each rejected.
-- Four regression tests for the bounded evidence-retry runner.
-- 11 live Elasticsearch authorization checks retained in `evidence/key-scopes.json`,
-  plus a recorded refusal of an unrestricted credential presented as the verifier key.
-- All three retained verdicts re-verified against live Elasticsearch and reproduced
-  byte-identical apart from `verified_at`.
-
-## Known limits
-
-- Generated traffic and injected faults throughout. This is not an integration with a
-  production release pipeline.
-- The 25 / 50 / 100% stages are not live-validated. Stage 1 passed on EKS today; stage 2
-  was refused because a concurrent load generator was active on the shared cluster —
-  the concurrency guard doing its job, but the later stages remain unmeasured.
-- Hashing gives traceability, not immutability. The controller holds ledger-write
-  access and could forge records. This is not cryptographic attestation.
-- No durable restart recovery, no independent expiry watchdog, no automatic reversal,
-  no autonomous incident initiation.
-- The retained INCONCLUSIVE cases are a missing receipt and a mid-trial route collapse,
-  not a demonstrated telemetry-loss or successful-retry case.
-- Agent Builder and Workflows run under the Kibana caller identity. The 11 Elasticsearch
-  scope checks do not establish a separate credential per agent.
-- AI contributes evidence interpretation and question answering. Not automated
-  root-cause proof, and not autonomous remediation.
-
-## Next
-
-Integrate the verifier with an existing rollout controller — Argo Rollouts is the
-obvious first target — and validate promotion, abort and pause behaviour against its
-gates. Attribute existing telemetry by deployment revision so a contract can be written
-against traffic a team already has. Add restart recovery and expiry handling. Give the
-Investigator read-only deployment-diff and runbook tools so its diagnosis is worth more
-than a restatement of the metrics.
-
-Future work, not current capabilities.
