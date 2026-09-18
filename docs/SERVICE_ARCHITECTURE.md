@@ -15,24 +15,25 @@ These probes were read-only. They replace the open questions in the earlier plan
 | **Elastic Agent Builder** | **Live.** `GET /api/agent_builder/agents` and `/tools` return 200; default `elastic-ai-agent` present; 37 builtin tools | Agent plane is configuration, not an integration build |
 | Kibana `.bedrock` connector | **Enabled** | "Agent Builder backed by Bedrock" is one connector, not custom glue |
 | Bedrock runtime | Works **only via inference profiles**. `us.anthropic.claude-sonnet-4-6` returned a completion; bare `anthropic.claude-sonnet-4-6` fails with `ValidationException` | Always use `us.`-prefixed model IDs |
-| AWS identity | `assumed-role/WSParticipantRole/Participant` (Workshop Studio), region `us-west-2`, temporary session token present | No realistic IAM/VPC/ALB provisioning; credentials expire |
-| EKS | `list-clusters` returns empty | No cluster exists; provisioning under this role is not a 4-hour bet |
-| ECR | No repositories | Local image build, no registry push |
+| AWS identity | **Re-probed 18 September 2026:** IAM user `arn:aws:iam::<account-id>:user/sloproof` with **AdministratorAccess**, region `us-west-2`, long-lived key. This supersedes the earlier Workshop Studio `WSParticipantRole` probe | Full provisioning is available. EKS is a real option, not a stretch. See the credential warning below |
+| EKS | `list-clusters` returns empty; account has a default VPC (`vpc-07842c3a16e997da1`, 172.31.0.0/16) in `us-west-2` | No cluster exists yet. Under AdministratorAccess, `eksctl` can create one. See D1 |
+| ECR | No repositories | `scripts/push-ecr.sh` creates `sloproof-checkout` on first push and returns a digest to pin |
 | SageMaker | Domain `amazon-bedrock-workshop`, `InService` | Exists but has no role in this architecture |
 | Local tooling | Docker/OrbStack 29.4, kubectl 1.35.3, brew, go 1.25, python 3.14, node 22 | Cluster substrate available |
-| Missing locally | `kind`, `k3d`, `helm`, `k6`, `hey` | Install `kind` + `helm`; write the load generator ourselves |
+| Missing locally | `eksctl`, `helm`, `kind`, `k3d`, `k6`, `hey` | `brew install eksctl helm` before `scripts/eks-up.sh`. Write the load generator ourselves |
 | Elastic RTT from this machine | ~100 ms total, ~35 ms connect (5 samples) | Bulk ingest off the request path is comfortable; measure index-visibility lag separately |
-| **Hazard** | The only kubectl contexts are Azure clusters `dev_automatic_cluster` (current) and `genesis-prod-v2` | Every script must pin and assert its context. See §6 |
+| **Hazard** | The only ambient kubectl contexts are Azure clusters `dev_automatic_cluster` (current) and `genesis-prod-v2` | Resolved: every script pins `KUBECONFIG` to a dedicated file and asserts the context. See §6 |
+| **Hazard** | The AdministratorAccess key above was pasted into a chat transcript | Treat as compromised. Rotate it, then supply the replacement through `aws configure --profile sloproof`. No script reads or stores credentials |
 
 ## 2. Decisions
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | **Local `kind` cluster** is the demo substrate, not EKS | A Workshop participant role cannot realistically create a cluster, node group, IAM roles, and an ALB inside the build window. Manifests stay portable so EKS remains an optional later target |
+| D1 | **Basic EKS** is the demo substrate — `eksctl`, one managed node group of 2x t3.medium across 2 AZs | **Revised 18 September 2026.** The original decision assumed a Workshop participant role. The credential actually in use has AdministratorAccess, so `eksctl create cluster` is viable. Budget 15-20 minutes for creation and run `scripts/eks-down.sh` afterwards: the control plane, nodes, and NLB all bill while they exist. Manifests stay portable, so `kind` remains the fallback if provisioning stalls |
 | D2 | **AWS depth comes from Bedrock**, not from AWS compute | Bedrock is verified working. Claiming AWS compute we do not run would be a false claim under Production Readiness |
 | D3 | **Agent Builder + `.bedrock` connector** is the reasoning plane | Both verified present. This satisfies the two integrations the organizers showed interest in, through configuration |
 | D4 | **One Go binary, one image, two Deployments**, fault profile from env | Identical code path for v1 and v2 makes the regression a config difference, and removes a second build from the critical path |
-| D5 | **Gateway API `HTTPRoute` weights via Envoy Gateway**, behind a `RouteAdapter` interface | Weighted routing must be measured, not asserted. The adapter keeps the riskiest dependency swappable (§5) |
+| D5 | **Gateway API `HTTPRoute` weights via Envoy Gateway** (`gatewayClassName: eg`), behind a `RouteAdapter` interface | Weighted routing must be measured, not asserted. Envoy Gateway is one helm release that brings its own Gateway API CRDs and needs no IAM policy or IRSA, unlike the AWS Load Balancer Controller; its listener Service still gets an AWS NLB. Swapping to the AWS LBC for a true ALB changes only `GATEWAY_CLASS_NAME` |
 | D6 | **Client-observed outcomes → `_bulk`**, not OpenTelemetry | One ingestion path we control, captures timeouts and gateway failures that never reach the service, and no collector to debug |
 | D7 | **Verifier is a separate process with a read-only key** | The promotion decision must be computationally and credentially separate from the thing that wants to promote. This is the core claim of the project |
 | D8 | **Agent output is advisory and written to the ledger as `advisory`** | The agent recommends; the deterministic verifier decides. It has no write path and no executor access |
@@ -41,7 +42,7 @@ These probes were read-only. They replace the open questions in the earlier plan
 
 ```mermaid
 flowchart TB
-    subgraph DP["Data plane — kind cluster, namespace sloproof"]
+    subgraph DP["Data plane — EKS cluster sloproof, namespace checkout"]
         LG[loadgen: constant arrival rate] --> GW[Envoy Gateway / HTTPRoute weights]
         GW --> V1[checkout-v1]
         GW --> V2[checkout-v2]
@@ -136,29 +137,42 @@ Nothing in the control plane changes when either fallback is taken. Disclose whi
 
 ## 6. Cluster isolation — required
 
-The current kubectl context is an Azure cluster named `dev_automatic_cluster`, alongside `genesis-prod-v2`. An unqualified `kubectl apply` from this machine targets someone's real infrastructure.
+The ambient kubectl context on this machine is an Azure cluster named `dev_automatic_cluster`, alongside `genesis-prod-v2`. An unqualified `kubectl apply` from here targets someone's real infrastructure.
 
-Every script must use a dedicated kubeconfig and assert the context before acting:
+**Implemented** in `scripts/_guard.sh`, which every cluster-touching script sources. Two layers:
 
-```bash
-export KUBECONFIG="$PWD/.kube/sloproof.config"   # gitignored
-kind create cluster --name sloproof --kubeconfig "$KUBECONFIG"
-ctx="$(kubectl config current-context)"
-[[ "$ctx" == "kind-sloproof" ]] || { echo "refusing: context is $ctx"; exit 1; }
+1. `KUBECONFIG` is pinned to `$REPO_ROOT/.kube/sloproof.config` (gitignored). No script reads the ambient kubeconfig, so the Azure contexts are not merely rejected — they are not visible.
+2. The context inside that file must equal `SLOPROOF_KUBE_CONTEXT`, which the operator exports explicitly. A mismatch or an unset value refuses with a non-zero exit.
+
+Verified behaviour before the cluster exists:
+
+```text
+$ scripts/set-weights.sh 10 90
+REFUSING: no pinned kubeconfig at .../.kube/sloproof.config
+  Create the cluster first:  scripts/eks-up.sh
+
+$ kubectl config current-context                      # ambient
+dev_automatic_cluster
+$ KUBECONFIG=.kube/sloproof.config kubectl config current-context
+error: current-context is not set
 ```
 
-No script may rely on the ambient current context.
+No script relies on the ambient current context.
 
 ## 7. Repository layout
 
 ```text
-src/checkout/     Go service and fault profiles
-src/loadgen/      constant-arrival-rate generator and bulk shipper
-src/control/      contract, executor + route adapters, verifier, state machine, watchdog
-k8s/              namespace, deployments, services, gateway, httproute
-elastic/          index templates, scoped API key setup, ES|QL queries, agent tool definitions
-demo/             up.sh, scenario-a.sh, scenario-b.sh, reset.sh, teardown.sh
-docs/             this file, DEMO_AND_SERVICE_REUSE.md, screenshots, evidence exports
+src/checkout/     Go service and fault profiles                          [built]
+src/loadgen/      constant-arrival-rate generator and bulk shipper         [not built]
+src/control/      contract, executor + route adapters, verifier, watchdog  [not built]
+infra/eks/        eksctl ClusterConfig                                     [built]
+k8s/              namespace, configmaps, deployments, services, gateway, httproute  [built]
+contracts/        frozen SLO acceptance criteria                           [built]
+scripts/          guard, eks up/down, gateway install, build, push, deploy,
+                  set-weights, set-profile, reset, local smoke test        [built]
+elastic/          index templates, scoped API keys, ES|QL, agent tools     [not built]
+evidence/         routing receipts and run exports (committed as evidence)
+docs/             this file, DEMO_AND_SERVICE_REUSE.md, CHECKOUT_SERVICE_SPEC.md
 ```
 
 ## 8. Ownership and sequence
@@ -167,7 +181,7 @@ Owners follow the split already proposed in `JUDGING_CRITERIA.md`. The three pla
 
 | Owner | Plane | First deliverable | Blocking gate |
 |---|---|---|---|
-| Person 1 | Data plane | kind cluster, service, two deployments, measured 90/10 | Observed per-version counts prove the split |
+| Person 1 | Data plane | EKS cluster, service, two deployments, measured 90/10 | Observed per-version counts prove the split |
 | Person 2 | Evidence + control | mappings, scoped keys, bulk ingest, ES\|QL verifier, ledger | Healthy v1 passes and slow v1 fails on real evidence |
 | Person 3 | Reasoning + presentation | `.bedrock` connector, agent tools, narrative, SUBMISSION.md | Agent cites measurements that match the verifier's numbers |
 

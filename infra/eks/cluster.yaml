@@ -1,0 +1,46 @@
+# Basic EKS cluster for the SLOProof checkout demo.
+#
+# eksctl creates its own VPC, subnets, and node IAM roles rather than reusing the
+# account default VPC, so teardown removes everything it made.
+#
+# Cost: the EKS control plane bills per hour while the cluster exists, plus two
+# t3.medium nodes and one load balancer. Run scripts/eks-down.sh when finished.
+# Creation takes roughly 15-20 minutes.
+#
+# The Kubernetes version is deliberately not pinned here: eksctl selects its
+# supported default. Pin it with `metadata.version` once you have confirmed which
+# versions EKS offers in this account and region.
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: sloproof
+  region: us-west-2
+  tags:
+    project: sloproof
+    purpose: hackathon-demo
+
+# Two AZs is the EKS minimum. More AZs cost more and prove nothing extra here.
+availabilityZones:
+  - us-west-2a
+  - us-west-2b
+
+# OIDC is not needed for Envoy Gateway, but enabling it at create time is what
+# makes a later move to the AWS Load Balancer Controller (IRSA) a small change
+# rather than a cluster rebuild.
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: checkout
+    instanceType: t3.medium
+    # Frozen for the duration of a demo run. Node autoscaling during a trial
+    # would make the v1/v2 comparison uninterpretable.
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 2
+    volumeSize: 20
+    labels:
+      role: checkout
+    tags:
+      project: sloproof

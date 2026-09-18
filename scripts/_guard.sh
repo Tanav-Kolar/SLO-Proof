@@ -1,30 +1,57 @@
 # Sourced by every script that talks to a cluster.
 #
-# Refuses to run unless SLOPROOF_KUBE_CONTEXT is set AND matches the current
-# kubectl context. A hackathon laptop usually has several contexts; this makes
-# applying the demo to the wrong cluster an explicit act rather than an accident.
+# Two protections, both required by SERVICE_ARCHITECTURE.md section 6:
+#
+#   1. KUBECONFIG is pinned to a dedicated file inside the repo. No script ever
+#      reads the ambient kubeconfig, so a stray context on the laptop cannot be
+#      targeted even by accident.
+#   2. The context inside that file must match SLOPROOF_KUBE_CONTEXT, which the
+#      operator sets explicitly.
+#
+# This machine's ambient contexts are unrelated production clusters. An
+# unqualified kubectl apply from here would target someone's real infrastructure.
 set -euo pipefail
 
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+# Pinned, gitignored, and exported so every kubectl and helm call inherits it.
+export KUBECONFIG="${SLOPROOF_KUBECONFIG:-$REPO_ROOT/.kube/sloproof.config}"
+
+NAMESPACE="${NAMESPACE:-checkout}"
+ROUTE_NAME="${ROUTE_NAME:-checkout-route}"
+LEDGER_DIR="${LEDGER_DIR:-evidence}"
+CLUSTER_NAME="${CLUSTER_NAME:-sloproof}"
+AWS_REGION="${AWS_REGION:-us-west-2}"
+
+require_kubeconfig() {
+  if [[ ! -f "$KUBECONFIG" ]]; then
+    echo "REFUSING: no pinned kubeconfig at $KUBECONFIG" >&2
+    echo "  Create the cluster first:  scripts/eks-up.sh" >&2
+    exit 1
+  fi
+}
+
 require_context() {
+  require_kubeconfig
   local current
   current="$(kubectl config current-context 2>/dev/null || true)"
 
   if [[ -z "${SLOPROOF_KUBE_CONTEXT:-}" ]]; then
     echo "REFUSING: SLOPROOF_KUBE_CONTEXT is not set." >&2
-    echo "  Current kubectl context is: ${current:-<none>}" >&2
-    echo "  Set it explicitly, e.g.:  export SLOPROOF_KUBE_CONTEXT='${current:-my-eks-context}'" >&2
+    echo "  Context in the pinned kubeconfig is: ${current:-<none>}" >&2
+    echo "  Set it explicitly:  export SLOPROOF_KUBE_CONTEXT='${current:-<context>}'" >&2
     exit 1
   fi
 
   if [[ "$current" != "$SLOPROOF_KUBE_CONTEXT" ]]; then
-    echo "REFUSING: context mismatch." >&2
+    echo "REFUSING: context mismatch inside the pinned kubeconfig." >&2
     echo "  SLOPROOF_KUBE_CONTEXT = $SLOPROOF_KUBE_CONTEXT" >&2
     echo "  current context       = ${current:-<none>}" >&2
-    echo "  Run: kubectl config use-context '$SLOPROOF_KUBE_CONTEXT'" >&2
     exit 1
   fi
 
-  echo "context: $current"
+  echo "kubeconfig: $KUBECONFIG"
+  echo "context:    $current"
 }
 
 require_env() {
@@ -35,6 +62,10 @@ require_env() {
   [[ $missing -eq 0 ]] || exit 1
 }
 
-NAMESPACE="${NAMESPACE:-checkout}"
-ROUTE_NAME="${ROUTE_NAME:-checkout-route}"
-LEDGER_DIR="${LEDGER_DIR:-evidence}"
+require_cmd() {
+  local missing=0
+  for c in "$@"; do
+    command -v "$c" >/dev/null 2>&1 || { echo "REFUSING: $c is not installed" >&2; missing=1; }
+  done
+  [[ $missing -eq 0 ]] || { echo "  brew install eksctl helm" >&2; exit 1; }
+}

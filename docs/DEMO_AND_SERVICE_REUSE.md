@@ -49,7 +49,7 @@ Load generator -> weighted route -> checkout v1 / v2
 - **Verifier:** calculate measurements from Elasticsearch and return `PROVED`, `FAILED`, or `INCONCLUSIVE` with reasons.
 - **Controller:** apply the authorized trial, conditional promotion, or reversal and record routing receipts.
 
-The current proposed hosting scope is local Kubernetes, with Elastic Agent Builder and a Bedrock integration if available. EKS is an optional hosting extension from earlier plans. Confirm the event's required services separately; the judging slide alone does not establish that EKS, Bedrock, SageMaker, or all of them are mandatory. Disclose any fixture or manual step used in place of an integration.
+The hosting scope is **basic EKS** (`eksctl`, one managed node group), with Elastic Agent Builder and a Bedrock integration if available. This was revised on 18 September 2026 once the AWS credential in use was confirmed to hold AdministratorAccess; local Kubernetes remains the fallback if provisioning stalls. Confirm the event's required services separately; the judging slide alone does not establish that EKS, Bedrock, SageMaker, or all of them are mandatory. Disclose any fixture or manual step used in place of an integration.
 
 ## Metrics
 
@@ -149,6 +149,6 @@ The confirmed judging weights are production readiness 30%, platform depth 25%, 
 
 Before presentation, complete two clean rehearsals, verify reset behavior, and save a backup recording plus evidence exports. A missing-evidence scenario is a useful additional demonstration after the successful and rejected trials work.
 
-Keep operational limits explicit: an operator-supervised controller is not an independent expiry watchdog; local Kubernetes does not demonstrate EKS deployment; a manual incident trigger is not automated detection. Protect rehearsal time before adding infrastructure or more services.
+Keep operational limits explicit: an operator-supervised controller is not an independent expiry watchdog; a manual incident trigger is not automated detection; and a trial that passes at 10% is not evidence that v1 sustains full traffic. Protect rehearsal time before adding infrastructure or more services.
 
 Judge-facing message: **“The agent proposes a recovery. Measured evidence decides whether it can expand.”**

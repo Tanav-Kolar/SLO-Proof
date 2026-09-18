@@ -8,7 +8,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/_guard.sh
 
-require_env AWS_REGION AWS_ACCOUNT_ID
+require_cmd aws docker
+require_env AWS_REGION
+# Derived rather than hand-set, so the registry can never point at another account.
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}"
 
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo dev)}"
 IMAGE_NAME="${IMAGE_NAME:-sloproof-checkout}"
