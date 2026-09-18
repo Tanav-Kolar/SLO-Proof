@@ -119,10 +119,12 @@ must be filled from observed served traffic.
 
 ## Safety: cluster guard
 
-Every script that touches a cluster sources `scripts/_guard.sh` and refuses
-unless `SLOPROOF_KUBE_CONTEXT` is set *and* matches the current kubectl context.
-A hackathon laptop usually carries several contexts; this makes deploying to the
-wrong cluster an explicit act.
+Every script that touches a cluster sources `scripts/_guard.sh`, which does two
+things. It pins `KUBECONFIG` to `.kube/sloproof.config` inside the repo, so no
+script ever reads the ambient kubeconfig; and it requires `SLOPROOF_KUBE_CONTEXT`
+to match the context inside that file. This laptop's ambient contexts are
+unrelated production clusters, so the isolation is not optional — with the pin in
+place those contexts are not merely rejected, they are invisible to the scripts.
 
 ## Running it
 
@@ -132,15 +134,31 @@ Locally, no cluster and no cloud account:
 scripts/smoke-test-local.sh
 ```
 
-On a cluster:
+On EKS. Prerequisites: `brew install eksctl helm`, and an AWS profile with
+permission to create a cluster. The scripts never read or store credentials.
 
 ```bash
+export AWS_PROFILE=sloproof
+export AWS_REGION=us-west-2
+
+scripts/eks-up.sh                # eksctl create cluster, 15-20 min, billable
+export SLOPROOF_KUBE_CONTEXT='<the context eks-up.sh prints>'
+
+scripts/install-gateway.sh       # Envoy Gateway + Gateway API CRDs + AWS NLB
+export GATEWAY_CLASS_NAME=eg
+
 scripts/build-image.sh
-scripts/push-ecr.sh                      # prints a digest-pinned CHECKOUT_IMAGE
-export SLOPROOF_KUBE_CONTEXT="$(kubectl config current-context)"
-export CHECKOUT_IMAGE='<account>.dkr.ecr.<region>.amazonaws.com/sloproof-checkout@sha256:...'
-export GATEWAY_CLASS_NAME='<your gateway class>'
+scripts/push-ecr.sh              # creates the repo, prints a digest-pinned ref
+export CHECKOUT_IMAGE='<account>.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:...'
+
 scripts/deploy.sh
+```
+
+Tear down when finished — the control plane, both nodes, and the NLB bill for as
+long as they exist:
+
+```bash
+scripts/eks-down.sh              # releases load balancers before deleting the cluster
 ```
 
 Demo sequence:
