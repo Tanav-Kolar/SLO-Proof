@@ -1,0 +1,30 @@
+{
+  "index": "sloproof-contracts",
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "contract": {
+        "type": "object",
+        "enabled": false
+      },
+      "contract_hash": {
+        "type": "keyword"
+      },
+      "frozen_at": {
+        "type": "date"
+      },
+      "frozen_by": {
+        "type": "keyword"
+      },
+      "run_id": {
+        "type": "keyword"
+      },
+      "service": {
+        "type": "keyword"
+      }
+    }
+  }
+}

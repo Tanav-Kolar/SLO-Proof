@@ -1,0 +1,15 @@
+{
+  "id": "verify_latency",
+  "type": "esql",
+  "description": "RED check: p99 latency for the checkout endpoint since a given window start. Verifier-only.",
+  "tags": [],
+  "configuration": {
+    "query": "FROM traces-*.otel-* | WHERE span.name == \"POST /checkout\" AND @timestamp >= ?window_start | STATS p99_ns = PERCENTILE(duration, 99) | EVAL p99_ms = ROUND(p99_ns / 1000000, 1)",
+    "params": {
+      "window_start": {
+        "type": "date",
+        "description": "Start of the verification window, bound to the executor's receipt applied_at timestamp, not now-minus-N-minutes"
+      }
+    }
+  }
+}

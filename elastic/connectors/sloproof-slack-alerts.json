@@ -1,0 +1,12 @@
+{
+  "id": "sloproof-slack-alerts",
+  "name": "sloproof-slack-alerts",
+  "connector_type_id": ".slack_api",
+  "config": {
+    "allowedChannels": [
+      {
+        "name": "#all-on-call-engineering-team"
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "checkout-remediation-api",
+  "name": "checkout-remediation-api",
+  "connector_type_id": ".webhook",
+  "config": {
+    "url": "https://t2eyht2ugsbey354dnk4jxgsr40rbabq.lambda-url.us-west-2.on.aws",
+    "method": "post",
+    "headers": {
+      "x-sloproof-executor-secret": "REDACTED-see-EXECUTOR_SHARED_SECRET-env-on-the-Lambda"
+    },
+    "hasAuth": false,
+    "authType": null
+  }
+}

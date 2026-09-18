@@ -1,0 +1,15 @@
+{
+  "id": "verify_error_rate",
+  "type": "esql",
+  "description": "RED check: aggregate error ratio for the checkout endpoint since a given window start. Verifier-only.",
+  "tags": [],
+  "configuration": {
+    "query": "FROM traces-*.otel-* | WHERE span.name == \"POST /checkout\" AND @timestamp >= ?window_start | STATS total = COUNT(*), errors = COUNT(*) WHERE status.code == \"Error\" | EVAL error_rate = ROUND(errors::double / total, 4)",
+    "params": {
+      "window_start": {
+        "type": "date",
+        "description": "Start of the verification window, bound to the executor's receipt applied_at timestamp, not now-minus-N-minutes"
+      }
+    }
+  }
+}
