@@ -32,6 +32,7 @@ spec:
               containerPort: 8080
           envFrom:
             - configMapRef: { name: checkout-v2-config }
+            - secretRef: { name: sloproof-otel-ingest }
           # Tolerant liveness on purpose: an active fault profile must not get
           # the pod restarted, or the incident disappears before it is measured.
           livenessProbe:

@@ -29,7 +29,20 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
+
+// tracer emits two spans per checkout request: the request span itself
+// ("POST /checkout") and a child representing the simulated call to the
+// quote dependency ("checkout -> quote"), which is what the SLOProof
+// verifier's dependency check queries.
+var tracer = otel.Tracer("checkout")
 
 //go:embed profiles.json
 var profilesJSON []byte
@@ -148,6 +161,20 @@ func main() {
 
 	s := &server{cfg: cfg, fingerprint: cfg.behaviourFingerprint(), startedAt: time.Now().UTC(), log: log}
 
+	// Tracing is best-effort: if OTEL_EXPORTER_OTLP_ENDPOINT isn't set (e.g. a
+	// local smoke test), the exporter still constructs but every export simply
+	// fails silently in the background rather than blocking startup.
+	tp, err := initTracer(context.Background(), cfg.ServiceName)
+	if err != nil {
+		log.Error("otel init", "error", err.Error())
+	} else {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = tp.Shutdown(ctx)
+		}()
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/checkout", s.handleCheckout)
 	mux.HandleFunc("/healthz", s.handleHealthz)
@@ -211,6 +238,9 @@ func main() {
 }
 
 func (s *server) handleCheckout(w http.ResponseWriter, r *http.Request) {
+	reqCtx, span := tracer.Start(r.Context(), "POST /checkout")
+	defer span.End()
+
 	start := time.Now().UTC()
 	n := s.counter.Add(1)
 
@@ -227,8 +257,13 @@ func (s *server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	delay := time.Duration(s.cfg.BaseLatencyMS+jitter+s.cfg.FaultLatencyMS) * time.Millisecond
 	injected := s.cfg.FaultErrorEveryN > 0 && n%uint64(s.cfg.FaultErrorEveryN) == 0
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.cfg.RequestTimeoutMS)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(reqCtx, time.Duration(s.cfg.RequestTimeoutMS)*time.Millisecond)
 	defer cancel()
+
+	// The quote dependency call is simulated in-process (there is no separate
+	// quote service in this demo), but it's the span the verifier's dependency
+	// check queries, so its status must reflect the same fault this request hit.
+	_, depSpan := tracer.Start(ctx, "checkout -> quote")
 
 	status := http.StatusOK
 	outcome := "success"
@@ -244,11 +279,22 @@ func (s *server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	case <-ctx.Done():
 		if errors.Is(ctx.Err(), context.Canceled) {
 			// Client hung up. Nothing useful to write; record it and stop.
+			depSpan.SetStatus(codes.Error, "client_cancelled")
+			depSpan.End()
+			span.SetStatus(codes.Error, "client_cancelled")
 			s.logRequest(r, start, n, reqID, runID, class, 499, "client_cancelled", injected, delay)
 			return
 		}
 		status = http.StatusGatewayTimeout
 		outcome = "timeout"
+	}
+
+	if outcome != "success" {
+		depSpan.SetStatus(codes.Error, outcome)
+	}
+	depSpan.End()
+	if status >= 500 {
+		span.SetStatus(codes.Error, outcome)
 	}
 
 	duration := time.Since(start)
@@ -334,6 +380,26 @@ func (s *server) handleVersion(w http.ResponseWriter, _ *http.Request) {
 		"served":              s.counter.Load(),
 		"effective_config":    s.cfg,
 	})
+}
+
+// initTracer wires an OTLP/HTTP exporter that reads its destination and
+// credential from the standard OTEL_EXPORTER_OTLP_ENDPOINT and
+// OTEL_EXPORTER_OTLP_HEADERS environment variables (never hardcoded here).
+func initTracer(ctx context.Context, serviceName string) (*sdktrace.TracerProvider, error) {
+	exp, err := otlptracehttp.New(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("otlp exporter: %w", err)
+	}
+	res, err := resource.New(ctx, resource.WithAttributes(semconv.ServiceName(serviceName)))
+	if err != nil {
+		return nil, fmt.Errorf("otel resource: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+	return tp, nil
 }
 
 func profileDescription(name string) string {
