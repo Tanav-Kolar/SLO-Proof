@@ -17,10 +17,12 @@ require_context
 CHART="oci://docker.io/envoyproxy/gateway-helm"
 # Unpinned by default so this keeps working as versions move. Pin it with
 # ENVOY_GATEWAY_VERSION once a working version is known, and record it.
+# Expanded with the ${arr[@]+...} idiom: under `set -u`, bash 3.2 (the macOS
+# default) treats an empty array expansion as an unbound variable and aborts.
 VERSION_ARG=()
 [[ -n "${ENVOY_GATEWAY_VERSION:-}" ]] && VERSION_ARG=(--version "$ENVOY_GATEWAY_VERSION")
 
-helm upgrade --install envoy-gateway "$CHART" "${VERSION_ARG[@]}" \
+helm upgrade --install envoy-gateway "$CHART" ${VERSION_ARG[@]+"${VERSION_ARG[@]}"} \
   --namespace envoy-gateway-system --create-namespace \
   --set config.envoyGateway.provider.kubernetes.envoyService.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb \
   --wait --timeout 10m
@@ -30,6 +32,18 @@ echo "installed: $RESOLVED"
 
 kubectl wait --namespace envoy-gateway-system \
   --for=condition=Available deployment/envoy-gateway --timeout=300s
+
+# The chart installs the controller but does not create a GatewayClass, so the
+# Gateway in k8s/40-gateway.yaml would have nothing to bind to.
+echo "creating GatewayClass ${GATEWAY_CLASS_NAME:-eg}"
+kubectl apply -f - <<YAML
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: ${GATEWAY_CLASS_NAME:-eg}
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+YAML
 
 echo
 echo "available GatewayClasses:"

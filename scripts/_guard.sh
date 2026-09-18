@@ -32,8 +32,23 @@ require_kubeconfig() {
   fi
 }
 
+# The EKS kubeconfig authenticates by exec'ing `aws eks get-token`. Without AWS
+# credentials in the environment that surfaces as an opaque "Unable to connect
+# to the server", which reads like a cluster outage rather than a missing
+# profile. Fail with the real reason instead.
+require_aws() {
+  if ! aws sts get-caller-identity >/dev/null 2>&1; then
+    echo "REFUSING: AWS credentials do not resolve." >&2
+    echo "  kubectl authenticates to EKS by running the aws CLI, so this would" >&2
+    echo "  otherwise look like the cluster being unreachable." >&2
+    echo "  Set AWS_PROFILE (and AWS_SHARED_CREDENTIALS_FILE if not in ~/.aws)." >&2
+    exit 1
+  fi
+}
+
 require_context() {
   require_kubeconfig
+  require_aws
   local current
   current="$(kubectl config current-context 2>/dev/null || true)"
 

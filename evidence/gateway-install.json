@@ -1,0 +1,6 @@
+{
+  "event": "gateway_controller_installed",
+  "chart": "gateway-helm-1.9.1",
+  "gateway_class_expected": "eg",
+  "installed_at": "2026-09-18T06:21:51Z"
+}
