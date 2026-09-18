@@ -1,0 +1,16 @@
+2026/09/18 10:01:34 run_id=live-bad-recovery-20260918-01 rps=100 target=http://envoy-checkout-checkout-gateway-220cbdc2.envoy-gateway-system.svc.cluster.local/checkout warmup=0s duration=5m0s
+2026/09/18 10:06:36 reconciliation query failed: refresh returned HTTP 403
+{
+  "achieved_rps": 99.4,
+  "arrivals": 30000,
+  "bulk_calls": 151,
+  "completed": 30000,
+  "dropped_arrivals": 0,
+  "elapsed_seconds": 301.9,
+  "indexed_failed": 0,
+  "indexed_ok": 30000,
+  "reconciled": false,
+  "run_id": "live-bad-recovery-20260918-01",
+  "searchable_in_es": -1,
+  "target_rps": 100
+}

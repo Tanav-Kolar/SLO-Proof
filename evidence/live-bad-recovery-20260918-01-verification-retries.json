@@ -1,0 +1,23 @@
+{
+  "run_id": "live-bad-recovery-20260918-01",
+  "attempts": [
+    {
+      "attempt": 1,
+      "artifact_source": "evidence/live-bad-recovery-20260918-01-verification-attempt-1.json",
+      "verdict": "INCONCLUSIVE",
+      "reason": "missing, stale, changed or underpowered evidence",
+      "retry_policy": {
+        "allowed": false,
+        "delay_seconds": 30,
+        "max_additional_attempts": 2,
+        "same_frozen_windows": true,
+        "reason": "Repair the evidence problem before a new trial; do not retry the route patch."
+      }
+    }
+  ],
+  "final_verdict": "INCONCLUSIVE",
+  "retry_budget_exhausted": false,
+  "maximum_elapsed_seconds": 120,
+  "same_frozen_windows": true,
+  "routing_actions": 0
+}

@@ -25,6 +25,10 @@ It never repeats a route patch or moves windows forward to search for a pass.
 - A missing receipt, route/configuration mismatch, malformed evidence, dropped
   arrivals, or an underpowered completed cohort requires repair and a new trial.
   Waiting cannot add requests to a completed, fully reconciled cohort.
+- A window whose observed candidate share diverges from the executed route
+  receipt by more than +/-0.05 is INCONCLUSIVE, not FAILED or PROVED. A trial
+  whose routing drifted to full candidate traffic did not measure the bounded
+  stage that was frozen, so neither outcome may be claimed for it.
 - Any conclusive result ends retries immediately. Retain every actual attempt;
   append only the final verifier result as the unique canonical decision.
 - Exhausted retries become HOLD_AND_ESCALATE. A workflow replay cannot reset

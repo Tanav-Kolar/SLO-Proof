@@ -102,7 +102,24 @@ steps:
           with:
             channelNames:
             - '#all-on-call-engineering-team'
-            text: 'SLOProof rollout PAUSED — recorded trial {{ inputs.run_id }}. Signal: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}. Candidate verdict: FAILED. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} Window comparisons: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.window_comparisons | json }}. Shared dependency failure is NOT proven. Keep current routing; no automatic reversal. Next: on-call should inspect common dependencies, infrastructure and configuration before authorizing another trial. Contract: {{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. This alert reviews recorded generated-traffic evidence.'
+            text: |-
+              :octagonal_sign:  *SLOProof — rollout PAUSED*
+
+              *Run*  `{{ inputs.run_id }}`
+              *Verdict*  `FAILED`  ·  *Signal*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}`
+              *Policy*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}`
+
+              *Candidate, per frozen 60s window*
+              ```
+              window 1   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[0].requests }}
+              window 2   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[1].requests }}
+              window 3   p95 {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].p95_ms }} ms   success {{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].success_rate }}   n={{ steps.read_verdict.output.hits.hits[0]._source.detail.windows[2].requests }}
+              ```
+              {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}
+
+              *Routing is unchanged.* FAILED does not send traffic back to a worse version — on-call chooses the next mitigation.
+
+              _Contract `{{ steps.read_verdict.output.hits.hits[0]._source.contract_hash }}` · verified {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }} · recorded generated-traffic evidence · this alert precedes any AI commentary._
         else:
         - name: hold_rollout
           type: console
@@ -115,7 +132,21 @@ steps:
           with:
             channelNames:
             - '#all-on-call-engineering-team'
-            text: 'SLOProof rollout HELD — recorded trial {{ inputs.run_id }}. Verdict: {{ steps.read_verdict.output.hits.hits[0]._source.verdict }}. {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }} No expansion or blind rollback. Evidence retry policy: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.evidence_retry | json }}. Budget exhausted: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.retry_budget_exhausted }}. Temporary delays are reverified by the read-only runner against the same frozen windows, at most twice within 120 seconds. Missing receipts, changed config, underpowered completed cohorts and invalid evidence require repair and a new trial. Workflow replay never refreshes the retry budget or reruns a route patch. Source verifier time: {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }}. Recorded generated-traffic evidence.'
+            text: |-
+              :warning:  *SLOProof — rollout HELD*
+
+              *Run*  `{{ inputs.run_id }}`
+              *Verdict*  `{{ steps.read_verdict.output.hits.hits[0]._source.verdict }}`  ·  *Signal*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.signal }}`
+              *Policy*  `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.action }}`
+
+              {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.explanation }}
+
+              *Evidence retry budget* — at most 2 rechecks, 30s apart, within 120s, against the same frozen windows. Exhausted: `{{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.retry_budget_exhausted }}`
+              Missing receipts, changed config, underpowered cohorts and invalid evidence need repair and a new trial, not a retry. A workflow replay never refreshes the budget or re-runs a route patch.
+
+              *Weights are held.* No expansion and no blind rollback.
+
+              _Verified {{ steps.read_rollout_policy.output.hits.hits[0]._source.detail.source_verified_at }} · recorded generated-traffic evidence_
     - name: investigate_if_measured
       type: if
       condition: 'steps.read_verdict.output.hits.hits.0._source.detail.windows.0.window_start: *'

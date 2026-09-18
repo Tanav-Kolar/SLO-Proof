@@ -1,0 +1,28 @@
+{
+  "run_id": "live-bad-recovery-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "source_verdict_id": "32c11b3999abf73d00dd88e56cce0fe0",
+  "source_verified_at": "2026-09-18T10:06:48.085471Z",
+  "recorded_verdict": "INCONCLUSIVE",
+  "action": "HOLD_AND_REPAIR",
+  "signal": "EVIDENCE_INSUFFICIENT",
+  "explanation": "Hold current weights and block expansion. Repair the evidence problem before a new trial; do not retry the route patch.",
+  "execution": "POLICY_ONLY_NO_ROUTING_PERFORMED",
+  "candidate_weight_plan": [
+    10,
+    25,
+    50,
+    100
+  ],
+  "current_candidate_weight": 10,
+  "both_versions_unhealthy": false,
+  "shared_cause_proven": false,
+  "evidence_retry": {
+    "allowed": false,
+    "delay_seconds": 30,
+    "max_additional_attempts": 2,
+    "same_frozen_windows": true,
+    "reason": "Repair the evidence problem before a new trial; do not retry the route patch."
+  },
+  "retry_budget_exhausted": false
+}

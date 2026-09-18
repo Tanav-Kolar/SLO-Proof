@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-18T08:46:43.170830+00:00",
+  "checked_at": "2026-09-18T09:53:06.641083+00:00",
   "run_id": "demo-slow-20260918-02",
   "source_document_id": "0aa2301e22be1afcd3c627c2f4482862",
   "checks": [
@@ -17,10 +17,10 @@
             "data": {
               "esql": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), first_seen = MIN(@timestamp),\n    last_seen = MAX(@timestamp), config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP\n    version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version"
             },
-            "tool_result_id": "dDEOQ2"
+            "tool_result_id": "QXPnS9"
           },
           {
-            "tool_result_id": "MVonzI",
+            "tool_result_id": "ozBKxo",
             "type": "esql_results",
             "data": {
               "source": "esql",
@@ -86,10 +86,10 @@
             "data": {
               "esql": "FROM sloproof-ledger\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND event == \"verdict\"\n      AND actor == \"deterministic-verifier\"\n| KEEP run_id, verdict, reason, contract_hash, @timestamp\n| SORT @timestamp DESC\n| LIMIT 2"
             },
-            "tool_result_id": "YiHZDj"
+            "tool_result_id": "WLmHpj"
           },
           {
-            "tool_result_id": "vSTo5f",
+            "tool_result_id": "2JXvXk",
             "type": "esql_results",
             "data": {
               "source": "esql",
@@ -144,10 +144,10 @@
             "data": {
               "esql": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE\n    run_id == \"demo-slow-20260918-02\" AND traffic_class == \"ordinary\"\n      AND @timestamp >= \"2026-09-18T08:16:55.99Z\"\n      AND @timestamp < \"2026-09-18T08:17:55.99Z\"\n| STATS\n    requests = COUNT(*), successes = SUM(CASE(success, 1, 0)),\n    p95_ms = PERCENTILE(duration_ms, 95), p50_ms = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::DOUBLE / requests::DOUBLE\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version"
             },
-            "tool_result_id": "qb6loS"
+            "tool_result_id": "cQcOw3"
           },
           {
-            "tool_result_id": "a4HO2R",
+            "tool_result_id": "1FxnaG",
             "type": "esql_results",
             "data": {
               "source": "esql",

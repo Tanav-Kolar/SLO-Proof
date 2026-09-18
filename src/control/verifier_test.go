@@ -18,7 +18,7 @@ func fixture(t *testing.T) (Contract, time.Time, time.Time, []map[string]any, []
 	b := a.Add(time.Minute)
 	complete := []map[string]any{{"version": "v1", "requests": float64(600), "config_hashes": float64(1), "first_seen": Stamp(a), "last_seen": Stamp(b.Add(-time.Millisecond))}}
 	metrics := []map[string]any{{"version": "v1", "requests": float64(600), "successes": float64(600), "success_rate": float64(1), "p95_ms": float64(57)}}
-	integrity := []map[string]any{{"invalid": float64(0), "wrong_config": float64(0), "unknown_version": float64(0)}}
+	integrity := []map[string]any{{"requests": float64(6000), "invalid": float64(0), "wrong_config": float64(0), "unknown_version": float64(0)}}
 	return c, a, b, complete, metrics, integrity
 }
 func TestWindowVerdicts(t *testing.T) {
@@ -36,11 +36,17 @@ func TestWindowVerdicts(t *testing.T) {
 		{"unknown gateway failure", "INCONCLUSIVE", func(a, b, c []map[string]any) { c[0]["unknown_version"] = 1.0 }},
 		{"missing metric", "INCONCLUSIVE", func(a, b, c []map[string]any) { delete(b[0], "p95_ms") }},
 		{"truncated observations", "INCONCLUSIVE", func(a, b, c []map[string]any) { a[0]["last_seen"] = a[0]["first_seen"] }},
+		// A route that silently converged to full candidate traffic is not the
+		// bounded slice the receipt froze, so it cannot be scored as one.
+		{"observed share is full traffic", "INCONCLUSIVE", func(a, b, c []map[string]any) { c[0]["requests"] = 600.0 }},
+		{"observed share within tolerance", "PROVED", func(a, b, c []map[string]any) { c[0]["requests"] = 4200.0 }},
+		{"observed share outside tolerance", "INCONCLUSIVE", func(a, b, c []map[string]any) { c[0]["requests"] = 3900.0 }},
+		{"missing total blocks the share check", "INCONCLUSIVE", func(a, b, c []map[string]any) { delete(c[0], "requests") }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c, a, b, x, y, z := fixture(t)
 			tc.change(x, y, z)
-			got, reason, _, _, _ := EvaluateWindow(c, a, b, x, y, z)
+			got, reason, _, _, _ := EvaluateWindow(c, a, b, x, y, z, 0.10)
 			if got != tc.want {
 				t.Fatalf("%s: %s", got, reason)
 			}
@@ -50,7 +56,7 @@ func TestWindowVerdicts(t *testing.T) {
 func TestEmptyNeverPasses(t *testing.T) {
 	c, a, b, x, y, z := fixture(t)
 	for _, v := range []struct{ x, y, z []map[string]any }{{nil, y, z}, {x, nil, z}, {x, y, nil}} {
-		got, _, _, _, _ := EvaluateWindow(c, a, b, v.x, v.y, v.z)
+		got, _, _, _, _ := EvaluateWindow(c, a, b, v.x, v.y, v.z, 0.10)
 		if got != "INCONCLUSIVE" {
 			t.Fatal(got)
 		}

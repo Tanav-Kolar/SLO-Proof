@@ -80,9 +80,12 @@ python3 scripts/render-evidence.py
 # Optional post-verdict Agent Builder review. It cannot alter the trial status;
 # collect its asynchronous execution separately with elastic/manage.py collect.
 if [[ "${SLOPROOF_ELASTIC_REVIEW:-1}" == 1 ]]; then
-  notification=()
-  if [[ "${SLOPROOF_SLACK:-1}" != 1 ]]; then notification=(--no-notify); fi
-  if ! .venv/bin/python elastic/manage.py run "$RUN_ID" "${notification[@]}"; then
+  # Build the command as a non-empty array. bash 3.2 (the macOS default) treats
+  # "${empty[@]}" as an unbound variable under `set -u`, which previously aborted
+  # the script here and masked the verifier's own exit code with 1.
+  review=(.venv/bin/python elastic/manage.py run "$RUN_ID")
+  if [[ "${SLOPROOF_SLACK:-1}" != 1 ]]; then review+=(--no-notify); fi
+  if ! "${review[@]}"; then
     echo 'Elastic review did not start. The recorded Go verdict remains authoritative; inspect the review error separately.' >&2
   fi
 fi

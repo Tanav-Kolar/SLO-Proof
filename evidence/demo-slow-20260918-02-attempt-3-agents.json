@@ -1,0 +1,61 @@
+{
+  "run_id": "demo-slow-20260918-02",
+  "attempt": 3,
+  "recorded_at": "2026-09-18T09:58:29.168882+00:00",
+  "scope": "AI advisory and explanation; no routing action",
+  "investigator": {
+    "action": "hold",
+    "target_version": null,
+    "proposed_weights": null,
+    "confidence": "high",
+    "rationale": "In the observed window, v1 handled 600 requests with a 100% success rate but its p95 latency was 507.5\u202fms, exceeding the 300\u202fms limit. v2 handled 5,398 requests with an 80.0% success rate and a p95 latency of 857.6\u202fms, violating both the success\u2011rate (0.99) and latency thresholds. Because neither version meets the latency SLO, and v2 also fails the success\u2011rate SLO, the safest recommendation is to hold traffic as\u2011is.",
+    "measurements": [
+      {
+        "version": "v1",
+        "requests": 600,
+        "success_rate": 1.0,
+        "p95_ms": 507.5396
+      },
+      {
+        "version": "v2",
+        "requests": 5398,
+        "success_rate": 0.8001111522786217,
+        "p95_ms": 857.6078
+      }
+    ],
+    "cited_query_ids": [
+      "evidence-completeness@47da042a71b2",
+      "window-metrics@3fb039436762"
+    ],
+    "blocking_concerns": [
+      "v1 p95 latency (507.5\u202fms) exceeds the 300\u202fms maximum",
+      "v2 p95 latency (857.6\u202fms) exceeds the 300\u202fms maximum",
+      "v2 success rate (0.80) below the 0.99 minimum"
+    ],
+    "_validation": {
+      "ok": true,
+      "problems": []
+    },
+    "_evidence": {
+      "query_ids": [
+        "evidence-completeness@47da042a71b2",
+        "traffic-split@d9dcb402e091",
+        "window-metrics@3fb039436762"
+      ],
+      "window_start": "2026-09-18T08:16:55.99Z",
+      "window_end": "2026-09-18T08:17:55.99Z"
+    },
+    "_model": "openai.gpt-oss-120b-1:0"
+  },
+  "narrator": {
+    "stdout": "The deterministic policy marked the rollout as\u202fFAILED because both the candidate (v1) and the incident version (v2) exceeded the latency target, with v1\u2019s 95th\u2011percentile staying around\u202f507\u202fms (e.g.,\u202f507.8624\u202fms in the\u202f08:16:45\u202fbucket) and v2\u2019s around\u202f859\u202fms (858.8244\u202fms in the\u202f08:16:30\u202fbucket).\u202fv2 also suffered a high rate of HTTP\u202f500 errors, accounting for\u202f5\u202f427\u202fof its\u202f21\u202f714\u202fsuccessful\u2011status requests, while v1 logged\u202f2\u202f851\u202fsuccessful\u202f200\u202fresponses with no errors.\u202fThe latency breach is visible from the very first 15\u2011second bucket for each version, and the error pattern for v2 persists throughout the run, as shown by the constant\u202f0.8\u202fsuccess\u202frate for v2 across all buckets.\u202fBecause neither version met the absolute contract\u2014both latency and error thresholds were violated\u2014the policy instructs to pause expansion and investigate shared dependencies.",
+    "diagnostics": "cited: incident-timeline@c6b943c18a54, outcome-breakdown@3a80d32f212f\nledger: agent_narrative A_zzs6ABlxOEEDbr9B_p",
+    "exit_code": 0
+  },
+  "briefer": {
+    "stdout": "The **window\u2011metrics** query for the run **demo\u2011slow\u201120260918\u201102** and the window **2026\u201109\u201118T08:16:55.99Z\u202f\u2192\u202f2026\u201109\u201118T08:17:55.99Z** returned:\n\n* **v1** \u2013 success\u202frate\u202f**1.0** (100\u202f%) and p95\u202f**507.5396\u202fms** (600 requests).  \n* **v2** \u2013 success\u202frate\u202f**0.8001111522786217** (\u2248\u202f80\u202f%) and p95\u202f**857.6078\u202fms** (5,398 requests).\n\nThese figures are trial measurements taken over a single one\u2011minute slice; they reflect only the traffic that happened during that interval and the limited sample size (\u2248\u202f600\u202fv1 requests, \u2248\u202f5.4\u202fk\u202fv2 requests). As such, they do not prove full\u2011load recovery or long\u2011term stability, and any verdict against the SLO (0.99 success, 300\u202fms p95) must be made by the verifier using these raw values. (Query run: **window\u2011metrics**.)",
+    "diagnostics": "cited: window-metrics@3fb039436762",
+    "exit_code": 0
+  },
+  "investigator_diagnostics": "ledger: agent_advisory 4vzzs6ABlxOEEDbroB54"
+}

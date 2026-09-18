@@ -1,9 +1,9 @@
 {
-  "installed_at": "2026-09-18T09:33:58.130575+00:00",
+  "installed_at": "2026-09-18T10:15:28.489869+00:00",
   "workflow_id": "sloproof-loop",
   "workflow_valid": true,
   "manual_only": true,
-  "workflow_sha256": "39d31a4cdf955e061989473fa810a138f7ee8ce94d2becde448c6c4e1f3d8927",
+  "workflow_sha256": "6c50174b5d94fefd02192e9922e59da9a99ee061908d36787fb4f29004405598",
   "assets": [
     {
       "kind": "tools",

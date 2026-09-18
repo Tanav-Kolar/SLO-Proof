@@ -188,7 +188,7 @@ func Verify(e Elastic, run, path, queries string, summary Summary) (result Verdi
 			v.Windows = append(v.Windows, w)
 			continue
 		}
-		w.Verdict, w.Reason, w.Requests, w.Success, w.P95 = EvaluateWindow(c, start, stop, complete.Rows(), metrics.Rows(), integrity.Rows())
+		w.Verdict, w.Reason, w.Requests, w.Success, w.P95 = EvaluateWindow(c, start, stop, complete.Rows(), metrics.Rows(), integrity.Rows(), PlannedShare(v.Receipt))
 		v.Windows = append(v.Windows, w)
 	}
 	v.Verdict = "PROVED"
@@ -206,7 +206,26 @@ func Verify(e Elastic, run, path, queries string, summary Summary) (result Verdi
 	}
 	return v, nil
 }
-func EvaluateWindow(c Contract, start, end time.Time, complete, metrics, integrity []map[string]any) (string, string, float64, float64, float64) {
+
+// ShareTolerance is the permitted gap between the candidate's observed share of
+// a window and the share the executor receipt recorded.
+const ShareTolerance = 0.05
+
+// PlannedShare converts the executed route receipt into the candidate's intended
+// share of traffic. It returns -1 when no receipt weights were recorded, so a run
+// without a receipt keeps its existing missing-evidence handling.
+func PlannedShare(r Receipt) float64 {
+	if len(r.Weights) != 2 {
+		return -1
+	}
+	total := r.Weights[0] + r.Weights[1]
+	if total <= 0 {
+		return -1
+	}
+	return float64(r.Weights[0]) / float64(total)
+}
+
+func EvaluateWindow(c Contract, start, end time.Time, complete, metrics, integrity []map[string]any, plannedShare float64) (string, string, float64, float64, float64) {
 	incon := func(s string) (string, string, float64, float64, float64) { return "INCONCLUSIVE", s, 0, 0, 0 }
 	if len(integrity) != 1 {
 		return incon("missing integrity evidence")
@@ -262,6 +281,21 @@ func EvaluateWindow(c Contract, start, end time.Time, complete, metrics, integri
 	m, ok := Number(b, "requests")
 	if !ok || m != n {
 		return incon("completeness and metric counts differ")
+	}
+	// The receipt records the share of traffic the candidate was actually given.
+	// If the observed cohort does not match it, this window did not measure the
+	// trial that was frozen: a route that silently converged to full candidate
+	// traffic would otherwise be scored as though it were a bounded slice, and a
+	// pass would claim "observed trial only" for something that was not bounded.
+	// Same +/-0.05 pooled-share tolerance the effective-timestamp anchor uses.
+	if plannedShare >= 0 {
+		total, ok := Number(integrity[0], "requests")
+		if !ok || total <= 0 {
+			return incon("missing total request count for observed-share check")
+		}
+		if observed := n / total; math.Abs(observed-plannedShare) > ShareTolerance {
+			return incon(fmt.Sprintf("observed candidate share %.4f diverges from the executed route receipt %.4f", observed, plannedShare))
+		}
 	}
 	rate, ok := Number(b, "success_rate")
 	p95, pok := Number(b, "p95_ms")

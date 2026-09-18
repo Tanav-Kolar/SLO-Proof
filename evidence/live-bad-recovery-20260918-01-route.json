@@ -1,0 +1,13 @@
+{
+  "run_id": "live-bad-recovery-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "route_uid": "92094228-dbf6-4751-b787-f9e397212b63",
+  "resource_version_before": "43403",
+  "resource_version_after": "45299",
+  "weights_after": [
+    10,
+    90
+  ],
+  "api_accepted_at": "2026-09-18T10:01:51.693805Z",
+  "route_effective_at": ""
+}

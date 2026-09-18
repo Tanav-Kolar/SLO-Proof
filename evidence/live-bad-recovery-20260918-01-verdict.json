@@ -1,0 +1,789 @@
+{
+  "run_id": "live-bad-recovery-20260918-01",
+  "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+  "version": "v1",
+  "verdict": "INCONCLUSIVE",
+  "reason": "missing, stale, changed or underpowered evidence",
+  "verified_at": "2026-09-18T10:06:48.085471Z",
+  "receipt": {
+    "run_id": "live-bad-recovery-20260918-01",
+    "contract_hash": "dd9fdf5a9e7e540d790a591ee2a9f89844e54f5228419cfdf88d4cad32f3c63f",
+    "route_uid": "92094228-dbf6-4751-b787-f9e397212b63",
+    "resource_version_before": "43403",
+    "resource_version_after": "45299",
+    "weights_after": [
+      10,
+      90
+    ],
+    "api_accepted_at": "2026-09-18T10:01:51.693805Z",
+    "route_effective_at": "2026-09-18T10:01:54.999Z",
+    "effective_evidence": {
+      "method": "three consecutive seconds, >=40 requests/second, pooled share +/-0.05",
+      "params": [
+        {
+          "run_id": "live-bad-recovery-20260918-01"
+        },
+        {
+          "window_start": "2026-09-18T10:01:51.693805Z"
+        },
+        {
+          "window_end": "2026-09-18T10:02:21.693805Z"
+        }
+      ],
+      "query": "FROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| EVAL second = DATE_TRUNC(1 second, @timestamp)\n| STATS requests = COUNT(*), last_seen = MAX(@timestamp) BY second, version\n| SORT second, version\n| LIMIT 1000",
+      "result": {
+        "columns": [
+          {
+            "name": "requests"
+          },
+          {
+            "name": "last_seen"
+          },
+          {
+            "name": "second"
+          },
+          {
+            "name": "version"
+          }
+        ],
+        "is_partial": false,
+        "values": [
+          [
+            3,
+            "2026-09-18T10:01:51.929Z",
+            "2026-09-18T10:01:51.000Z",
+            "v1"
+          ],
+          [
+            28,
+            "2026-09-18T10:01:51.999Z",
+            "2026-09-18T10:01:51.000Z",
+            "v2"
+          ],
+          [
+            10,
+            "2026-09-18T10:01:52.999Z",
+            "2026-09-18T10:01:52.000Z",
+            "v1"
+          ],
+          [
+            90,
+            "2026-09-18T10:01:52.989Z",
+            "2026-09-18T10:01:52.000Z",
+            "v2"
+          ],
+          [
+            10,
+            "2026-09-18T10:01:53.939Z",
+            "2026-09-18T10:01:53.000Z",
+            "v1"
+          ],
+          [
+            90,
+            "2026-09-18T10:01:53.999Z",
+            "2026-09-18T10:01:53.000Z",
+            "v2"
+          ],
+          [
+            10,
+            "2026-09-18T10:01:54.919Z",
+            "2026-09-18T10:01:54.000Z",
+            "v1"
+          ],
+          [
+            90,
+            "2026-09-18T10:01:54.999Z",
+            "2026-09-18T10:01:54.000Z",
+            "v2"
+          ],
+          [
+            10,
+            "2026-09-18T10:01:55.929Z",
+            "2026-09-18T10:01:55.000Z",
+            "v1"
+          ],
+          [
+            90,
+            "2026-09-18T10:01:55.998Z",
+            "2026-09-18T10:01:55.000Z",
+            "v2"
+          ],
+          [
+            39,
+            "2026-09-18T10:01:56.999Z",
+            "2026-09-18T10:01:56.000Z",
+            "unknown"
+          ],
+          [
+            6,
+            "2026-09-18T10:01:56.529Z",
+            "2026-09-18T10:01:56.000Z",
+            "v1"
+          ],
+          [
+            55,
+            "2026-09-18T10:01:56.609Z",
+            "2026-09-18T10:01:56.000Z",
+            "v2"
+          ],
+          [
+            100,
+            "2026-09-18T10:01:57.999Z",
+            "2026-09-18T10:01:57.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:01:58.999Z",
+            "2026-09-18T10:01:58.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:01:59.999Z",
+            "2026-09-18T10:01:59.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:00.999Z",
+            "2026-09-18T10:02:00.000Z",
+            "unknown"
+          ],
+          [
+            99,
+            "2026-09-18T10:02:01.990Z",
+            "2026-09-18T10:02:01.000Z",
+            "unknown"
+          ],
+          [
+            101,
+            "2026-09-18T10:02:02.999Z",
+            "2026-09-18T10:02:02.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:03.998Z",
+            "2026-09-18T10:02:03.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:04.999Z",
+            "2026-09-18T10:02:04.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:05.999Z",
+            "2026-09-18T10:02:05.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:06.999Z",
+            "2026-09-18T10:02:06.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:07.999Z",
+            "2026-09-18T10:02:07.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:08.999Z",
+            "2026-09-18T10:02:08.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:09.999Z",
+            "2026-09-18T10:02:09.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:10.999Z",
+            "2026-09-18T10:02:10.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:11.998Z",
+            "2026-09-18T10:02:11.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:12.999Z",
+            "2026-09-18T10:02:12.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:13.999Z",
+            "2026-09-18T10:02:13.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:14.999Z",
+            "2026-09-18T10:02:14.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:15.999Z",
+            "2026-09-18T10:02:15.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:16.999Z",
+            "2026-09-18T10:02:16.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:17.999Z",
+            "2026-09-18T10:02:17.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:18.999Z",
+            "2026-09-18T10:02:18.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:19.999Z",
+            "2026-09-18T10:02:19.000Z",
+            "unknown"
+          ],
+          [
+            100,
+            "2026-09-18T10:02:20.999Z",
+            "2026-09-18T10:02:20.000Z",
+            "unknown"
+          ],
+          [
+            69,
+            "2026-09-18T10:02:21.689Z",
+            "2026-09-18T10:02:21.000Z",
+            "unknown"
+          ]
+        ]
+      }
+    }
+  },
+  "reconciliation": {
+    "generator": {
+      "run_id": "live-bad-recovery-20260918-01",
+      "arrivals": 30000,
+      "dropped_arrivals": 0,
+      "completed": 30000,
+      "indexed_ok": 30000,
+      "indexed_failed": 0,
+      "searchable_in_es": -1
+    },
+    "searchable_now": 30000
+  },
+  "windows": [
+    {
+      "window_index": 0,
+      "window_start": "2026-09-18T10:01:54.999Z",
+      "window_end": "2026-09-18T10:02:54.999Z",
+      "verdict": "INCONCLUSIVE",
+      "reason": "invalid evidence: unknown_version",
+      "requests": 0,
+      "success_rate": 0,
+      "p95_ms": 0,
+      "queries": [
+        {
+          "name": "evidence-completeness",
+          "query": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests      = COUNT(*),\n        first_seen    = MIN(@timestamp),\n        last_seen     = MAX(@timestamp),\n        config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:01:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:02:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "meets_min_samples"
+              },
+              {
+                "name": "config_hashes"
+              },
+              {
+                "name": "first_seen"
+              },
+              {
+                "name": "last_seen"
+              }
+            ],
+            "values": [
+              [
+                "unknown",
+                5817,
+                true,
+                1,
+                "2026-09-18T10:01:56.619Z",
+                "2026-09-18T10:02:54.779Z"
+              ],
+              [
+                "v1",
+                37,
+                false,
+                1,
+                "2026-09-18T10:01:55.099Z",
+                "2026-09-18T10:02:54.989Z"
+              ],
+              [
+                "v2",
+                146,
+                false,
+                1,
+                "2026-09-18T10:01:54.999Z",
+                "2026-09-18T10:01:56.609Z"
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "window-metrics",
+          "query": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE run_id == ?run_id\n    AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start\n    AND @timestamp <  ?window_end\n| STATS requests     = COUNT(*),\n        successes    = SUM(CASE(success, 1, 0)),\n        p95_ms       = PERCENTILE(duration_ms, 95),\n        p50_ms       = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::double / requests::double\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:01:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:02:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "successes"
+              },
+              {
+                "name": "success_rate"
+              },
+              {
+                "name": "p50_ms"
+              },
+              {
+                "name": "p95_ms"
+              }
+            ],
+            "values": [
+              [
+                "unknown",
+                5817,
+                0,
+                0,
+                1.201,
+                1.4381999999999997
+              ],
+              [
+                "v1",
+                37,
+                37,
+                1,
+                502.952,
+                507.2036
+              ],
+              [
+                "v2",
+                146,
+                117,
+                0.8013698630136986,
+                849.8655,
+                856.97925
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "evidence-integrity",
+          "query": "FROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests = COUNT(*),\n        invalid = SUM(CASE(service != \"checkout\" OR service IS NULL OR duration_ms IS NULL OR duration_ms < 0 OR success IS NULL OR status IS NULL OR success != (status == 200), 1, 0)),\n        wrong_config = SUM(CASE(version == \"v1\" AND (config_hash IS NULL OR config_hash != ?config_hash), 1, 0)),\n        unknown_version = SUM(CASE(version IS NULL OR (version != \"v1\" AND version != \"v2\"), 1, 0))",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:01:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:02:54.999Z"
+            },
+            {
+              "config_hash": "44e43af26edbd1c0"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "requests"
+              },
+              {
+                "name": "invalid"
+              },
+              {
+                "name": "wrong_config"
+              },
+              {
+                "name": "unknown_version"
+              }
+            ],
+            "values": [
+              [
+                6000,
+                0,
+                0,
+                5817
+              ]
+            ],
+            "is_partial": false
+          }
+        }
+      ]
+    },
+    {
+      "window_index": 1,
+      "window_start": "2026-09-18T10:02:54.999Z",
+      "window_end": "2026-09-18T10:03:54.999Z",
+      "verdict": "FAILED",
+      "reason": "p95 must be strictly below maximum",
+      "requests": 6000,
+      "success_rate": 1,
+      "p95_ms": 507.54025,
+      "queries": [
+        {
+          "name": "evidence-completeness",
+          "query": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests      = COUNT(*),\n        first_seen    = MIN(@timestamp),\n        last_seen     = MAX(@timestamp),\n        config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:02:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:03:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "meets_min_samples"
+              },
+              {
+                "name": "config_hashes"
+              },
+              {
+                "name": "first_seen"
+              },
+              {
+                "name": "last_seen"
+              }
+            ],
+            "values": [
+              [
+                "v1",
+                6000,
+                true,
+                1,
+                "2026-09-18T10:02:54.999Z",
+                "2026-09-18T10:03:54.989Z"
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "window-metrics",
+          "query": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE run_id == ?run_id\n    AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start\n    AND @timestamp <  ?window_end\n| STATS requests     = COUNT(*),\n        successes    = SUM(CASE(success, 1, 0)),\n        p95_ms       = PERCENTILE(duration_ms, 95),\n        p50_ms       = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::double / requests::double\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:02:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:03:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "successes"
+              },
+              {
+                "name": "success_rate"
+              },
+              {
+                "name": "p50_ms"
+              },
+              {
+                "name": "p95_ms"
+              }
+            ],
+            "values": [
+              [
+                "v1",
+                6000,
+                6000,
+                1,
+                500.0855,
+                507.54025
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "evidence-integrity",
+          "query": "FROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests = COUNT(*),\n        invalid = SUM(CASE(service != \"checkout\" OR service IS NULL OR duration_ms IS NULL OR duration_ms < 0 OR success IS NULL OR status IS NULL OR success != (status == 200), 1, 0)),\n        wrong_config = SUM(CASE(version == \"v1\" AND (config_hash IS NULL OR config_hash != ?config_hash), 1, 0)),\n        unknown_version = SUM(CASE(version IS NULL OR (version != \"v1\" AND version != \"v2\"), 1, 0))",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:02:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:03:54.999Z"
+            },
+            {
+              "config_hash": "44e43af26edbd1c0"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "requests"
+              },
+              {
+                "name": "invalid"
+              },
+              {
+                "name": "wrong_config"
+              },
+              {
+                "name": "unknown_version"
+              }
+            ],
+            "values": [
+              [
+                6000,
+                0,
+                0,
+                0
+              ]
+            ],
+            "is_partial": false
+          }
+        }
+      ]
+    },
+    {
+      "window_index": 2,
+      "window_start": "2026-09-18T10:03:54.999Z",
+      "window_end": "2026-09-18T10:04:54.999Z",
+      "verdict": "FAILED",
+      "reason": "p95 must be strictly below maximum",
+      "requests": 6000,
+      "success_rate": 1,
+      "p95_ms": 507.629,
+      "queries": [
+        {
+          "name": "evidence-completeness",
+          "query": "// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.\n//\n// It answers: did the trial cohort actually receive enough requests to judge,\n// and is the data fresh? An empty result is not zero errors -- it is missing\n// evidence, and the contract treats the two differently on purpose.\n//\n// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is\n// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads\n// as ~0.8% phantom duplicates on samples this size -- an artifact that would\n// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,\n// because request_id is the document _id, so a repeat overwrites rather than\n// double-counts. The real completeness check is the load generator's\n// completed-vs-searchable reconciliation.\n//\n// config_hashes must be 1. More than one means the service's behaviour changed\n// mid-window, which invalidates the comparison.\n//\n// Params: ?run_id, ?window_start, ?window_end\nFROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests      = COUNT(*),\n        first_seen    = MIN(@timestamp),\n        last_seen     = MAX(@timestamp),\n        config_hashes = COUNT_DISTINCT(config_hash)\n      BY version\n| EVAL meets_min_samples = requests >= 400\n| KEEP version, requests, meets_min_samples, config_hashes, first_seen, last_seen\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:03:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:04:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "meets_min_samples"
+              },
+              {
+                "name": "config_hashes"
+              },
+              {
+                "name": "first_seen"
+              },
+              {
+                "name": "last_seen"
+              }
+            ],
+            "values": [
+              [
+                "v1",
+                6000,
+                true,
+                1,
+                "2026-09-18T10:03:54.999Z",
+                "2026-09-18T10:04:54.989Z"
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "window-metrics",
+          "query": "// Per-version contract metrics for one evaluation window.\n//\n// Parameters (positional, passed in the _query request's \"params\" array):\n//   ?run_id       the run under evaluation\n//   ?window_start inclusive, ISO-8601 UTC\n//   ?window_end   exclusive, ISO-8601 UTC\n//\n// traffic_class is filtered by explicit field, never by timestamp guesswork:\n// warmup and synthetic traffic carry their own label and the contract excludes\n// them by name. A timeout counts as a failure, which is why success_rate is\n// computed from the boolean the client observed rather than from HTTP status.\nFROM sloproof-requests\n| WHERE run_id == ?run_id\n    AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start\n    AND @timestamp <  ?window_end\n| STATS requests     = COUNT(*),\n        successes    = SUM(CASE(success, 1, 0)),\n        p95_ms       = PERCENTILE(duration_ms, 95),\n        p50_ms       = PERCENTILE(duration_ms, 50)\n      BY version\n| EVAL success_rate = successes::double / requests::double\n| KEEP version, requests, successes, success_rate, p50_ms, p95_ms\n| SORT version\n",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:03:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:04:54.999Z"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "version"
+              },
+              {
+                "name": "requests"
+              },
+              {
+                "name": "successes"
+              },
+              {
+                "name": "success_rate"
+              },
+              {
+                "name": "p50_ms"
+              },
+              {
+                "name": "p95_ms"
+              }
+            ],
+            "values": [
+              [
+                "v1",
+                6000,
+                6000,
+                1,
+                500.49199999999996,
+                507.629
+              ]
+            ],
+            "is_partial": false
+          }
+        },
+        {
+          "name": "evidence-integrity",
+          "query": "FROM sloproof-requests\n| WHERE run_id == ?run_id AND traffic_class == \"ordinary\"\n    AND @timestamp >= ?window_start AND @timestamp < ?window_end\n| STATS requests = COUNT(*),\n        invalid = SUM(CASE(service != \"checkout\" OR service IS NULL OR duration_ms IS NULL OR duration_ms < 0 OR success IS NULL OR status IS NULL OR success != (status == 200), 1, 0)),\n        wrong_config = SUM(CASE(version == \"v1\" AND (config_hash IS NULL OR config_hash != ?config_hash), 1, 0)),\n        unknown_version = SUM(CASE(version IS NULL OR (version != \"v1\" AND version != \"v2\"), 1, 0))",
+          "params": [
+            {
+              "run_id": "live-bad-recovery-20260918-01"
+            },
+            {
+              "window_start": "2026-09-18T10:03:54.999Z"
+            },
+            {
+              "window_end": "2026-09-18T10:04:54.999Z"
+            },
+            {
+              "config_hash": "44e43af26edbd1c0"
+            }
+          ],
+          "result": {
+            "columns": [
+              {
+                "name": "requests"
+              },
+              {
+                "name": "invalid"
+              },
+              {
+                "name": "wrong_config"
+              },
+              {
+                "name": "unknown_version"
+              }
+            ],
+            "values": [
+              [
+                6000,
+                0,
+                0,
+                0
+              ]
+            ],
+            "is_partial": false
+          }
+        }
+      ]
+    }
+  ],
+  "recovery_assessment": {
+    "incident_status": "OPEN",
+    "promotion_gate": "BLOCKED",
+    "routing_action": "NO_AUTOMATIC_CHANGE",
+    "explanation": "The evidence cannot establish recovery. Routing remains unchanged and promotion is blocked pending adequate evidence and operator review.",
+    "scope": "OBSERVED_TRIAL_ONLY"
+  }
+}

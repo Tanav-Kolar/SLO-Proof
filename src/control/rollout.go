@@ -197,7 +197,9 @@ func compareOriginal(c Contract, w Window) (string, float64, float64) {
 	}
 	// Apply the same count, coverage and metric checks to v2. This comparison
 	// does not invent a second frozen deployment/configuration attestation.
-	outcome, _, _, success, p95 := EvaluateWindow(c, start, end, complete, metrics, integrity)
+	// The observed-share check is disabled here (-1): the receipt records the
+	// candidate's share, and the incumbent cohort is its complement.
+	outcome, _, _, success, p95 := EvaluateWindow(c, start, end, complete, metrics, integrity, -1)
 	return outcome, p95, success
 }
 

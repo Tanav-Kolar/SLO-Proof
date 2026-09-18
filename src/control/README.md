@@ -27,6 +27,12 @@ Implemented:
 - Three non-overlapping 60-second windows under the unchanged contract. Each
   queries completeness first, then metrics, then evidence integrity. Empty,
   unknown, changed, underpowered, premature or unreconciled evidence cannot pass.
+- Each window's observed candidate share is compared against the executed route
+  receipt, within the same +/-0.05 pooled tolerance the effective-time anchor
+  uses. A window whose share diverges is INCONCLUSIVE: a route that drifted to
+  full candidate traffic was not the bounded slice the contract froze, so it
+  cannot be scored as one. The incumbent comparison disables this check, because
+  the receipt records the candidate's share and the incumbent is its complement.
 - Full ES|QL text, bound parameters, result rows and exact window ranges in the
   verdict. A p95 equal to 300 ms fails (the criterion is strictly below).
 - Generator completed/indexed counts reconciled against all searchable run
