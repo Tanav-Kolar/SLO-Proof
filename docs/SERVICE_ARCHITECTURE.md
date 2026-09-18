@@ -110,6 +110,8 @@ A Kibana `.bedrock` connector to `us-west-2` with `us.anthropic.claude-sonnet-4-
 
 The agent returns a recommendation — action, target, weights, rationale, and the query IDs its claims rest on. That record goes to the ledger tagged `advisory`. It cannot write contracts, patch routes, or invoke the executor.
 
+**There is one agent in this design, not several.** Three owners, four planes, one agent. The executor and the verifier are ordinary deterministic programs and must stay that way: if an agent decided promotions there would be nothing left to prove, which is the opposite of the claim in §4. Any additional agent belongs outside the decision path — explaining an incident, narrating a verdict after it is written, or drafting criteria a human then freezes.
+
 ## 4. Trust boundaries
 
 Four credentials, not one. The unrestricted key in `.env` is for setup only and must not be used by any runtime component.
@@ -162,22 +164,28 @@ No script relies on the ambient current context.
 ## 7. Repository layout
 
 ```text
-src/checkout/     Go service and fault profiles                          [built]
-src/loadgen/      constant-arrival-rate generator and bulk shipper         [not built]
-src/control/      contract, executor + route adapters, verifier, watchdog  [not built]
-infra/eks/        eksctl ClusterConfig                                     [built]
-k8s/              namespace, configmaps, deployments, services, gateway, httproute  [built]
-contracts/        frozen SLO acceptance criteria                           [built]
+src/checkout/     Go service and fault profiles                          [built, deployed]
+src/loadgen/      constant-arrival-rate generator and bulk shipper       [built, verified]
+src/control/      contract, executor + route adapters, verifier, watchdog    [NOT BUILT]
+infra/eks/        eksctl ClusterConfig                                   [built, applied]
+k8s/              namespace, configmaps, deployments, services,
+                  gateway, httproute                                     [built, applied]
+contracts/        frozen SLO acceptance criteria                                  [built]
 scripts/          guard, eks up/down, gateway install, build, push, deploy,
-                  set-weights, set-profile, reset, local smoke test        [built]
-elastic/          index templates, scoped API keys, ES|QL, agent tools     [not built]
-evidence/         routing receipts and run exports (committed as evidence)
+                  set-weights, set-profile, reset, local smoke test               [built]
+elastic/          index templates, setup, scoped-key script, ES|QL query          [built]
+                  agent tools                                                [NOT BUILT]
+evidence/         routing receipts and run exports                        [untracked so far]
 docs/             this file, DEMO_AND_SERVICE_REUSE.md, CHECKOUT_SERVICE_SPEC.md
+
+The single most important gap is `src/control/`. Without the verifier there is
+no verdict, and the verdict is the one part of the demo that cannot be faked or
+narrated around.
 ```
 
 ## 8. Ownership and sequence
 
-Owners follow the split already proposed in `JUDGING_CRITERIA.md`. The three planes are independently buildable once the request document shape and the contract JSON schema are agreed — agree both in the first 15 minutes, because everything else depends on them.
+Owners follow the split already proposed in `JUDGING_CRITERIA.md`. Three owners cover the four planes of §3; the reasoning plane rides with presentation. The workstreams are independently buildable once the request document shape and the contract JSON schema are agreed — agree both in the first 15 minutes, because everything else depends on them.
 
 | Owner | Plane | First deliverable | Blocking gate |
 |---|---|---|---|
@@ -187,12 +195,20 @@ Owners follow the split already proposed in `JUDGING_CRITERIA.md`. The three pla
 
 Order of completion: measured routing, then real evidence, then the verdict, then the agent, then the dashboard. Reserve the final 45 minutes for two clean rehearsals from reset and a backup recording.
 
+**Current state, 18 September 2026.** Person 1: cluster live, both versions
+deployed behind Envoy Gateway, all four pods ready — but the blocking gate is
+*not* met, because no measured 90/10 split has been run yet. Person 2: ingest
+and evidence path verified end to end against the live cluster (1500 requests
+shipped and reconciled; ES|QL returned v2 at 80.0% success and p95 856 ms,
+breaching both thresholds) — the verifier and ledger writer remain unbuilt, so
+the gate is not met either. Person 3: not started.
+
 ## 9. Open items
 
 | Item | Status | Recommendation |
 |---|---|---|
 | **Sarvam** | Key provisioned in `.env`, no plan uses it | Only after scenarios A and B are green: a spoken incident briefing, or a voice question routed to the agent. Keep it entirely out of the decision path |
 | **SageMaker** | Workshop domain exists; no role in this design | Confirm with organizers whether it is mandatory before spending any time. There is no honest 4-hour use here |
-| **Credential expiry** | AWS session token will expire | Confirm the expiry time early; the Bedrock connector fails when it lapses. Elastic key is unaffected |
-| **EKS** | Not provisioned, not planned | Optional stretch only, and only if the local demo is already green and rehearsed |
+| **AWS credential** | Superseded: the credential in use is a **long-lived IAM user key** (`user/sloproof`, AdministratorAccess), not an expiring Workshop session token, so there is no expiry deadline | Different risk instead: that key was pasted into a chat transcript and grants full account access. Rotate it, and prefer `aws configure --profile sloproof` over anything that writes credentials into the repo |
+| **EKS** | **Provisioned and active.** Cluster `sloproof`, Kubernetes 1.34, two t3.medium nodes, Envoy Gateway 1.9.1. The live load balancer is a **classic ELB**: the NLB annotation was originally set as a helm value, which the chart stores but the controller never applies to the generated Service, so AWS fell back to a CLB with no error surfaced. Now corrected onto `Gateway.spec.infrastructure`; the live LB stays a CLB until the Gateway is reapplied | Supersedes the earlier "optional stretch" position; see the revised D1. Costs roughly $6.50/day while it exists, so run `scripts/eks-down.sh` when finished — it releases load balancers *before* deleting the cluster, which is what stops an orphaned LB billing on after teardown |
 | **Ingestion allowance** | Proposed 30 s after window close | Measure actual index-visibility lag in rehearsal and freeze the measured value |

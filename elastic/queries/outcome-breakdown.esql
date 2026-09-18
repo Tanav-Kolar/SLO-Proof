@@ -1,0 +1,10 @@
+// What kind of failure, not just how much. Separates injected 500s from
+// timeouts and from requests that never reached a pod at all -- the last
+// category is invisible to service-side logging and is exactly why the
+// verifier reads client-observed records.
+//
+// Params: ?run_id
+FROM sloproof-requests
+| WHERE run_id == ?run_id AND traffic_class == "ordinary"
+| STATS requests = COUNT(*) BY version, outcome, status
+| SORT version ASC, requests DESC

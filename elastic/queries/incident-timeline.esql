@@ -1,0 +1,19 @@
+// THE demo query. One picture of the whole incident: per-version health over
+// time, in 15-second buckets.
+//
+// This is what makes the story legible -- v2 goes red and stays red, then the
+// 10% slice on v1 shows green in the same buckets, side by side, while overall
+// service health is still bad. That simultaneity is the entire argument for
+// trialling a recovery rather than just asserting one.
+//
+// Params: ?run_id
+FROM sloproof-requests
+| WHERE run_id == ?run_id AND traffic_class == "ordinary"
+| EVAL bucket = DATE_TRUNC(15 seconds, @timestamp)
+| STATS requests  = COUNT(*),
+        successes = SUM(CASE(success, 1, 0)),
+        p95_ms    = PERCENTILE(duration_ms, 95)
+      BY bucket, version
+| EVAL success_rate = ROUND(successes::double / requests::double, 4)
+| KEEP bucket, version, requests, success_rate, p95_ms
+| SORT bucket ASC, version ASC

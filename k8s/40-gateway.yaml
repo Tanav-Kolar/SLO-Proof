@@ -10,6 +10,14 @@ metadata:
   labels: { app.kubernetes.io/part-of: sloproof }
 spec:
   gatewayClassName: __GATEWAY_CLASS_NAME__
+  # Envoy Gateway renders these onto the Service it generates for this Gateway,
+  # which is what actually selects the AWS load balancer type. Setting the same
+  # annotation as a helm value does NOT work: the chart stores it but the
+  # controller never applies it to the Service, and AWS then falls back to a
+  # classic ELB with no error anywhere.
+  infrastructure:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
   listeners:
     - name: http
       protocol: HTTP

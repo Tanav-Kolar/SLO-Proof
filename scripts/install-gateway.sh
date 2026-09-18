@@ -22,9 +22,12 @@ CHART="oci://docker.io/envoyproxy/gateway-helm"
 VERSION_ARG=()
 [[ -n "${ENVOY_GATEWAY_VERSION:-}" ]] && VERSION_ARG=(--version "$ENVOY_GATEWAY_VERSION")
 
+# No load-balancer annotation here on purpose. The chart accepts
+# config.envoyGateway.provider.kubernetes.envoyService.annotations and stores it,
+# but the controller does not apply it to the generated Service, so it silently
+# achieves nothing. The annotation lives on the Gateway in k8s/40-gateway.yaml.
 helm upgrade --install envoy-gateway "$CHART" ${VERSION_ARG[@]+"${VERSION_ARG[@]}"} \
   --namespace envoy-gateway-system --create-namespace \
-  --set config.envoyGateway.provider.kubernetes.envoyService.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb \
   --wait --timeout 10m
 
 RESOLVED="$(helm list -n envoy-gateway-system -o json | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["chart"])')"

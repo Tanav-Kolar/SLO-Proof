@@ -144,7 +144,7 @@ export AWS_REGION=us-west-2
 scripts/eks-up.sh                # eksctl create cluster, 15-20 min, billable
 export SLOPROOF_KUBE_CONTEXT='<the context eks-up.sh prints>'
 
-scripts/install-gateway.sh       # Envoy Gateway + Gateway API CRDs + AWS NLB
+scripts/install-gateway.sh       # Envoy Gateway + Gateway API CRDs + GatewayClass
 export GATEWAY_CLASS_NAME=eg
 
 scripts/build-image.sh
@@ -172,8 +172,13 @@ scripts/reset.sh                 # back to the starting state
 
 ## Not built here
 
-Out of scope for this layer, and owned elsewhere: the load generator and
-Elasticsearch bulk ingestion, index mappings and scoped API keys, the ES|QL
-verifier and ledger writer, the Kibana view, and the Bedrock / Agent Builder
-investigation path. The contract file is the interface between this layer and
-the verifier.
+Out of scope for *this layer*, though some of it now exists elsewhere in the
+repo. Built since this document was first written: the load generator and its
+`_bulk` shipper (`src/loadgen/`), the index templates and scoped-key setup
+(`elastic/`), and the ES|QL window query. Still unbuilt: the **ES|QL verifier and
+ledger writer** (`src/control/`), the Kibana view, and the Bedrock / Agent
+Builder investigation path.
+
+The contract file is the interface between this layer and the verifier, and the
+verifier is the gap that matters — until it exists there is no verdict, only
+measurements.

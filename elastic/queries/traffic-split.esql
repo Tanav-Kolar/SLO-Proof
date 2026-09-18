@@ -1,0 +1,12 @@
+// Observed traffic split, from served requests.
+//
+// A weight of 10 in the HTTPRoute and a successful kubectl patch are both
+// statements of intent. This query is the only thing that shows traffic
+// actually moved. Gate on this, never on the requested weights.
+//
+// Params: ?run_id, ?window_start, ?window_end
+FROM sloproof-requests
+| WHERE run_id == ?run_id AND traffic_class == "ordinary"
+    AND @timestamp >= ?window_start AND @timestamp < ?window_end
+| STATS requests = COUNT(*) BY version
+| SORT version

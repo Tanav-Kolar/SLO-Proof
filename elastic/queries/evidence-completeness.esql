@@ -1,0 +1,20 @@
+// The INCONCLUSIVE guard. Run this BEFORE trusting any verdict.
+//
+// It answers: did the trial cohort actually receive enough requests to judge,
+// and is the data fresh? An empty result is not zero errors -- it is missing
+// evidence, and the contract treats the two differently on purpose.
+//
+// Params: ?run_id, ?window_start, ?window_end
+FROM sloproof-requests
+| WHERE run_id == ?run_id AND traffic_class == "ordinary"
+    AND @timestamp >= ?window_start AND @timestamp < ?window_end
+| STATS requests      = COUNT(*),
+        distinct_reqs = COUNT_DISTINCT(request_id),
+        first_seen    = MIN(@timestamp),
+        last_seen     = MAX(@timestamp),
+        config_hashes = COUNT_DISTINCT(config_hash)
+      BY version
+| EVAL meets_min_samples = requests >= 400,
+       duplicates        = requests - distinct_reqs
+| KEEP version, requests, meets_min_samples, duplicates, config_hashes, first_seen, last_seen
+| SORT version
