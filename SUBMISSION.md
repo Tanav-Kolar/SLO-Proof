@@ -274,3 +274,29 @@ API and Elastic.
 Agent Builder uses Elastic's configured model connector, which is a different path
 from the direct Bedrock agents; the Kibana Bedrock connector could not accept the
 workshop credentials' session token. Sarvam and SageMaker are not used.
+
+**How the pieces fit.** Elasticsearch holds client-observed requests, frozen
+contracts and the decision ledger in three indices under three separate API keys.
+Every contract check is ES|QL, and the contract hashes the exact query *text*, not
+just the thresholds — which is why re-running a verdict hours later reproduces it
+byte for byte. Agent Builder's Investigator, Verdict Explainer and Evidence Briefer
+are each restricted to three read-only, bounded tools. The `sloproof-loop` workflow
+sequences the review and has no routing step and no verdict-writing step.
+
+**The gate is not the model.** The workflow reads the recorded Go verdict, requires
+exactly one, branches on the matching deterministic policy, alerts Slack, and only
+then calls an agent. A run with no recorded decision stops the review before any
+agent call — kept as evidence: `REVIEW_BLOCKED … 0 agent calls`. Expansion past the
+current stage needs a fresh frozen trial and new measurements, never an agent's
+recommendation. All three outcome branches alerted live to
+`#all-on-call-engineering-team`: PROVED `ts 1789728283.725569`, FAILED
+`ts 1789726542.717359`, INCONCLUSIVE `ts 1789726104.948059`, each carrying the
+per-window numbers and the contract hash, none carrying model output.
+
+Server-side OpenTelemetry spans are collected and deliberately excluded from the
+verdict. In one window of `live-bad-recovery-20260918-01` the client observed 5,817
+failed requests that produced no spans at all, having been rejected before reaching
+an instrumented pod, while the instrumented cohorts matched the client counts
+exactly. Spans are advisory context — `elastic/queries/otel-*.esql` and the
+`sloproof-otel-spans` dashboard sit them beside the contract evidence — and the
+verifier's scoped credential is refused on that data with HTTP 403.
