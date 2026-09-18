@@ -14,7 +14,7 @@ EKS execution remains unvalidated because AWS authentication expired.
 
 - Team name: tyr
 - Project name: SLOProof
-- Members: **team to supply names before submission.**
+- Members: Vaibhav, Tanav, Shreyansh
 
 ## Problem
 
