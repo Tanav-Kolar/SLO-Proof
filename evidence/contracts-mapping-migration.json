@@ -1,0 +1,27 @@
+{
+  "original": "sloproof-contracts",
+  "archive": "sloproof-archive-contracts-20260918t071814z",
+  "replacement": "sloproof-contracts-v1-20260918t071814z",
+  "preserved_count": 1,
+  "legacy_documents": {
+    "aftDs6ABlxOEEDbrp_tt": {
+      "contract_uid": "02e1b321-68c9-45f2-8ee9-4742b4c48ac2",
+      "service": "checkout",
+      "incident_class": "checkout_slo_burn",
+      "action": "no_action",
+      "target_route": "checkout-route",
+      "sli_thresholds": {
+        "success_rate_min": 0.99,
+        "p95_latency_ms_max": 300
+      },
+      "observation_window": {
+        "window_count": 3,
+        "window_seconds": 60
+      },
+      "min_sample_size": 400,
+      "criteria_hash": "97386c1ae557bc18256f9789ec0fe58754461e66756b3b2ac52d704edf03f649",
+      "created_at": "2026-09-18T06:45:50Z"
+    }
+  },
+  "at": "20260918t071814z"
+}

@@ -41,7 +41,7 @@ fi
 
 DESC_INGEST='{"ingest":{"cluster":["monitor"],"indices":[{"names":["sloproof-requests*"],"privileges":["create_index","write","create","index","view_index_metadata"]}]}}'
 DESC_VERIFIER='{"verifier":{"cluster":["monitor"],"indices":[{"names":["sloproof-requests*","sloproof-contracts*","sloproof-ledger*"],"privileges":["read","view_index_metadata"]}]}}'
-DESC_CONTROLLER='{"controller":{"cluster":["monitor"],"indices":[{"names":["sloproof-contracts*","sloproof-ledger*"],"privileges":["create_index","write","create","index","read","view_index_metadata"]}]}}'
+DESC_CONTROLLER='{"controller":{"cluster":["monitor"],"indices":[{"names":["sloproof-contracts*","sloproof-ledger*"],"privileges":["create_index","write","create","index","read","view_index_metadata"]},{"names":["sloproof-requests*"],"privileges":["read","view_index_metadata"]}]}}'
 
 derived_key_error=0
 
@@ -125,4 +125,5 @@ fi
 
 echo
 echo "$ok/3 keys written to .env (gitignored). Secrets were not printed."
+[[ "$ok" -eq 3 ]] || exit 1
 echo "Now prove the verifier really cannot write:  elastic/verify-key-scopes.sh"

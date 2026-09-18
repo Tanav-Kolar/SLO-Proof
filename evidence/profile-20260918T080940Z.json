@@ -1,0 +1,7 @@
+{
+  "event": "fault_profile_changed",
+  "version": "v1",
+  "profile": "bad-recovery",
+  "changed_at": "2026-09-18T08:09:40Z",
+  "actor": "operator"
+}

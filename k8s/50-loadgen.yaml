@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __LOADGEN_JOB__
+  namespace: checkout
+  labels: { app: sloproof-loadgen }
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels: { app: sloproof-loadgen }
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: loadgen
+          image: __LOADGEN_IMAGE__
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: "1", memory: 256Mi }
+          env:
+            - { name: TARGET_URL, value: "__TARGET_URL__" }
+            - { name: RPS, value: "__RPS__" }
+            - { name: DURATION, value: "__DURATION__" }
+            - { name: WARMUP, value: "__WARMUP__" }
+            - { name: RUN_ID, value: "__RUN_ID__" }
+            - { name: TRAFFIC_CLASS, value: ordinary }
+            - { name: MAX_INFLIGHT, value: "400" }
+            - name: ELASTIC_CLOUD_ENDPOINT
+              valueFrom:
+                secretKeyRef: { name: sloproof-loadgen, key: ELASTIC_CLOUD_ENDPOINT }
+            - name: ELASTIC_API_KEY
+              valueFrom:
+                secretKeyRef: { name: sloproof-loadgen, key: ELASTIC_INGEST_API_KEY }

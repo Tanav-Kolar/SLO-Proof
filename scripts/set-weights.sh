@@ -61,7 +61,7 @@ json.dump({
     "resource_version_after": after["metadata"]["resourceVersion"],
     "weights_before": weights(before),
     "weights_after": weights(after),
-    "api_accepted_at": datetime.datetime.now(datetime.UTC).isoformat(),
+    "api_accepted_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     "route_effective_at": None,
     "note": "route_effective_at must be filled from observed served traffic, not from this timestamp."
 }, open(sys.argv[2], "w"), indent=2)

@@ -1,0 +1,73 @@
+{
+  "checked_at": "2026-09-18T08:12:03.693215+00:00",
+  "probe_run_id": "scope-probe-67771176ba2d4eea8a53eddebe27f0fe",
+  "passed": true,
+  "checks": [
+    {
+      "check": "verifier reads requests",
+      "actual_http_status": 200,
+      "expected_http_status": 200,
+      "passed": true
+    },
+    {
+      "check": "verifier reads contracts",
+      "actual_http_status": 200,
+      "expected_http_status": 200,
+      "passed": true
+    },
+    {
+      "check": "verifier reads ledger",
+      "actual_http_status": 200,
+      "expected_http_status": 200,
+      "passed": true
+    },
+    {
+      "check": "verifier cannot write requests",
+      "actual_http_status": 403,
+      "expected_http_status": 403,
+      "passed": true
+    },
+    {
+      "check": "verifier cannot write contracts",
+      "actual_http_status": 403,
+      "expected_http_status": 403,
+      "passed": true
+    },
+    {
+      "check": "verifier cannot write ledger",
+      "actual_http_status": 403,
+      "expected_http_status": 403,
+      "passed": true
+    },
+    {
+      "check": "ingest cannot write ledger",
+      "actual_http_status": 403,
+      "expected_http_status": 403,
+      "passed": true
+    },
+    {
+      "check": "ingest writes requests",
+      "actual_http_status": 201,
+      "expected_http_status": 201,
+      "passed": true
+    },
+    {
+      "check": "controller cannot write requests",
+      "actual_http_status": 403,
+      "expected_http_status": 403,
+      "passed": true
+    },
+    {
+      "check": "controller reads request observations",
+      "actual_http_status": 200,
+      "expected_http_status": 200,
+      "passed": true
+    },
+    {
+      "check": "controller writes ledger",
+      "actual_http_status": 201,
+      "expected_http_status": 201,
+      "passed": true
+    }
+  ]
+}

@@ -1,46 +1,46 @@
 #!/usr/bin/env bash
-# Proves the credential separation instead of asserting it.
-#
-# D7 claims the verifier is credentially separate from the thing that wants to
-# promote. That claim is only worth anything if the verifier key demonstrably
-# fails to write. This script attempts each forbidden action and reports the
-# HTTP status, so a judge can see 403 rather than take the design on trust.
+# Assert real HTTP authorization results. Missing keys or unexpected statuses
+# fail the command; a printed list of unexamined statuses is not a proof.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-
-[[ -f .env ]] || { echo "REFUSING: no .env" >&2; exit 1; }
 set -a; source .env; set +a
-: "${ELASTIC_CLOUD_ENDPOINT:?not set in .env}"
-
-probe() {
-  local label="$1" key="$2" method="$3" path="$4" data="${5:-}"
-  if [[ -z "$key" ]]; then
-    printf '  %-46s %s\n' "$label" "SKIPPED (key not in .env)"
-    return
-  fi
-  local args=(-sS -o /dev/null -w '%{http_code}' --max-time 20 -X "$method"
-              -H "Authorization: ApiKey $key" -H 'Content-Type: application/json')
-  [[ -n "$data" ]] && args+=(-d "$data")
-  printf '  %-46s HTTP %s\n' "$label" "$(curl "${args[@]}" "$ELASTIC_CLOUD_ENDPOINT$path")"
-}
-
-echo "expected: reads 200, forbidden writes 403"
-echo
-echo "verifier key (must read everything, write nothing):"
-probe "read sloproof-requests"          "${ELASTIC_VERIFIER_API_KEY:-}"   POST /sloproof-requests/_count
-probe "read sloproof-contracts"         "${ELASTIC_VERIFIER_API_KEY:-}"   POST /sloproof-contracts/_count
-probe "WRITE sloproof-ledger (must 403)" "${ELASTIC_VERIFIER_API_KEY:-}"  POST "/sloproof-ledger/_doc" '{"event":"scope_probe"}'
-probe "WRITE sloproof-requests (must 403)" "${ELASTIC_VERIFIER_API_KEY:-}" POST "/sloproof-requests/_doc" '{"run_id":"scope_probe"}'
-
-echo
-echo "ingest key (must write requests only):"
-probe "write sloproof-requests"          "${ELASTIC_INGEST_API_KEY:-}"    POST "/sloproof-requests/_doc" '{"run_id":"scope-probe","request_id":"scope-probe","traffic_class":"synthetic","service":"checkout","version":"probe","status":200,"outcome":"success","success":true,"duration_ms":1.0,"@timestamp":"2026-01-01T00:00:00Z","started_at":"2026-01-01T00:00:00Z","ended_at":"2026-01-01T00:00:00Z","generator_id":"probe","config_hash":"probe","target_host":"probe"}'
-probe "WRITE sloproof-ledger (must 403)"  "${ELASTIC_INGEST_API_KEY:-}"   POST "/sloproof-ledger/_doc" '{"event":"scope_probe"}'
-
-echo
-echo "controller key (must write contracts and ledger):"
-probe "write sloproof-ledger"            "${ELASTIC_CONTROLLER_API_KEY:-}" POST "/sloproof-ledger/_doc" '{"event":"scope_probe"}'
-probe "WRITE sloproof-requests (must 403)" "${ELASTIC_CONTROLLER_API_KEY:-}" POST "/sloproof-requests/_doc" '{"run_id":"scope_probe"}'
-
-echo
-echo "Any 'must 403' line showing 2xx means the separation is not real."
+python3 - <<'PY'
+import datetime,json,os,pathlib,sys,urllib.request,urllib.error,uuid
+needed=['ELASTIC_CLOUD_ENDPOINT','ELASTIC_VERIFIER_API_KEY','ELASTIC_INGEST_API_KEY','ELASTIC_CONTROLLER_API_KEY']
+missing=[k for k in needed if not os.environ.get(k)]
+if missing:sys.exit('REFUSING: missing '+', '.join(missing))
+base=os.environ['ELASTIC_CLOUD_ENDPOINT'];probe='scope-probe-'+uuid.uuid4().hex
+now=datetime.datetime.now(datetime.timezone.utc).isoformat()
+record={'run_id':probe,'request_id':probe,'traffic_class':'synthetic','service':'checkout','version':'probe','status':200,'outcome':'success','success':True,'duration_ms':1,'@timestamp':now,'started_at':now,'ended_at':now,'generator_id':'scope-probe','config_hash':'probe','target_host':'probe'}
+ledger={'@timestamp':now,'run_id':probe,'event':'scope_probe','actor':'operator'}
+checks=[
+ ('verifier reads requests','VERIFIER','POST','/sloproof-requests/_count',{},200),
+ ('verifier reads contracts','VERIFIER','POST','/sloproof-contracts/_count',{},200),
+ ('verifier reads ledger','VERIFIER','POST','/sloproof-ledger/_count',{},200),
+ ('verifier cannot write requests','VERIFIER','PUT','/sloproof-requests/_doc/'+probe,record,403),
+ ('verifier cannot write contracts','VERIFIER','PUT','/sloproof-contracts/_doc/'+probe,{'run_id':probe},403),
+ ('verifier cannot write ledger','VERIFIER','PUT','/sloproof-ledger/_doc/'+probe,ledger,403),
+ ('ingest cannot write ledger','INGEST','PUT','/sloproof-ledger/_doc/'+probe,ledger,403),
+ ('ingest writes requests','INGEST','PUT','/sloproof-requests/_doc/'+probe,record,201),
+ ('controller cannot write requests','CONTROLLER','PUT','/sloproof-requests/_doc/'+probe+'-controller',record,403),
+ ('controller reads request observations','CONTROLLER','POST','/sloproof-requests/_count',{},200),
+ ('controller writes ledger','CONTROLLER','PUT','/sloproof-ledger/_doc/'+probe,ledger,201),
+]
+failed=False
+results=[]
+for label,key,method,path,body,expected in checks:
+ req=urllib.request.Request(base+path,method=method,data=json.dumps(body).encode(),headers={'Authorization':'ApiKey '+os.environ['ELASTIC_'+key+'_API_KEY'],'Content-Type':'application/json'})
+ try:
+  with urllib.request.urlopen(req,timeout=30) as r:status=r.status
+ except urllib.error.HTTPError as e:status=e.code
+ print(label+': HTTP '+str(status)+' (expected '+str(expected)+')')
+ results.append({'check':label,'actual_http_status':status,'expected_http_status':expected,'passed':status==expected})
+ if status!=expected:failed=True
+# Probe records are synthetic and identified by a unique run ID; retain them as
+# inspectable authorization evidence, outside all trial runs and observations.
+artifact=pathlib.Path('evidence/key-scopes.json')
+artifact.parent.mkdir(exist_ok=True)
+artifact.write_text(json.dumps({'checked_at':now,'probe_run_id':probe,'passed':not failed,'checks':results},indent=2)+'\n')
+print('Saved sanitized permission results to '+str(artifact))
+sys.exit(1 if failed else 0)
+PY

@@ -2,6 +2,11 @@
 
 Private team repository for the Elastic Forge the Future Hackathon.
 
+For the current demo, start with [the operator runbook](docs/DEMO_RUNBOOK.md),
+[the two-hour finish plan](docs/TWO_HOUR_FINISH.md), and
+[the control-plane implementation status](src/control/README.md). Earlier
+architecture notes predate the verifier and in-cluster load-generator work.
+
 ## Start here
 
 1. Copy `.env.example` to `.env` and add your keys locally.

@@ -10,7 +10,8 @@ IMAGE_NAME="${IMAGE_NAME:-sloproof-checkout}"
 LOCAL_REF="${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "building ${LOCAL_REF} for ${PLATFORM}"
-docker build --platform "${PLATFORM}" -t "${LOCAL_REF}" src/checkout
+BUILD_CONTEXT="${BUILD_CONTEXT:-src/checkout}"
+docker build --platform "${PLATFORM}" -t "${LOCAL_REF}" "$BUILD_CONTEXT"
 
 echo
 echo "built: ${LOCAL_REF}"

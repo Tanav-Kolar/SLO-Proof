@@ -1,0 +1,20 @@
+{
+  "run_id": "d9-healthy-20260918",
+  "contract_hash": "",
+  "version": "v1",
+  "verdict": "INCONCLUSIVE",
+  "reason": "verifier has forbidden index on sloproof-requests",
+  "verified_at": "2026-09-18T07:18:40.694871Z",
+  "receipt": {
+    "run_id": "",
+    "contract_hash": "",
+    "route_uid": "",
+    "resource_version_before": "",
+    "resource_version_after": "",
+    "weights_after": null,
+    "api_accepted_at": "",
+    "route_effective_at": ""
+  },
+  "reconciliation": null,
+  "windows": null
+}

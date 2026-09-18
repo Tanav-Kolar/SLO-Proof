@@ -12,6 +12,8 @@ RENDER="$(mktemp -d)"
 trap 'rm -rf "$RENDER"' EXIT
 
 for f in k8s/*.yaml; do
+  # Load generation is an explicit, separately configured experiment.
+  [[ "$(basename "$f")" == "50-loadgen.yaml" ]] && continue
   sed -e "s|__CHECKOUT_IMAGE__|${CHECKOUT_IMAGE}|g" \
       -e "s|__GATEWAY_CLASS_NAME__|${GATEWAY_CLASS_NAME}|g" \
       -e "s|__RUN_ID__|${RUN_ID}|g" \

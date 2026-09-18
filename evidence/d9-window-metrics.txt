@@ -1,0 +1,5 @@
+version  requests  successes  success_rate  p50_ms  p95_ms
+-------  --------  ---------  ------------  ------  ------
+v1       7001      7001       1.00          50.18   57.48
+
+1 rows

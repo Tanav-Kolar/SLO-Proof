@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Operator guide for configuring a service for evidence-gated recovery with SLOProof.">
+<title>SLOProof Service Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans+Condensed:wght@500;600;700&amp;family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&amp;display=swap">
+<style>
+  :root {
+    --ground:      #f6f7f9;
+    --surface:     #ffffff;
+    --surface-2:   #edeff4;
+    --ink:         #111722;
+    --ink-2:       #444e60;
+    --ink-3:       #6d7789;
+    --rule:        #d7dce4;
+    --rule-strong: #b9c1cd;
+    --accent:      #2f4c9b;
+    --accent-ink:  #22397a;
+    --accent-soft: #e5eaf6;
+    --proved:      #1c7a4c;
+    --failed:      #ab2338;
+    --incon:       #8d6205;
+    --shadow:      0 1px 2px rgba(17, 23, 34, .06), 0 8px 24px -16px rgba(17, 23, 34, .28);
+
+    --display: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif;
+    --body:    "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground:      #0d1017;
+      --surface:     #141924;
+      --surface-2:   #1b2130;
+      --ink:         #e7eaf0;
+      --ink-2:       #aeb6c5;
+      --ink-3:       #7e8798;
+      --rule:        #28303f;
+      --rule-strong: #3a4455;
+      --accent:      #8ca8f0;
+      --accent-ink:  #b3c5f7;
+      --accent-soft: #1b2440;
+      --proved:      #4fc08a;
+      --failed:      #f2748a;
+      --incon:       #e0b155;
+      --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -18px rgba(0, 0, 0, .8);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground:      #0d1017;
+    --surface:     #141924;
+    --surface-2:   #1b2130;
+    --ink:         #e7eaf0;
+    --ink-2:       #aeb6c5;
+    --ink-3:       #7e8798;
+    --rule:        #28303f;
+    --rule-strong: #3a4455;
+    --accent:      #8ca8f0;
+    --accent-ink:  #b3c5f7;
+    --accent-soft: #1b2440;
+    --proved:      #4fc08a;
+    --failed:      #f2748a;
+    --incon:       #e0b155;
+    --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -18px rgba(0, 0, 0, .8);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    margin: 0;
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .shell { max-width: 1180px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- masthead ---------- */
+  .masthead { border-bottom: 1px solid var(--rule); padding: 44px 0 28px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 14px;
+  }
+  .eyebrow b { color: var(--accent); font-weight: 500; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(38px, 6vw, 62px);
+    line-height: 1.02;
+    letter-spacing: -.015em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    max-width: 62ch;
+    font-size: 18px;
+    color: var(--ink-2);
+    margin: 0 0 24px;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .meta-row span b { color: var(--ink-2); font-weight: 500; }
+  .theme-toggle {
+    font: inherit;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  /* ---------- layout ---------- */
+  .layout { display: block; }
+  @media (min-width: 1000px) {
+    .layout { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 56px; align-items: start; }
+    .rail { position: sticky; top: 24px; }
+  }
+  .rail { padding-top: 40px; }
+  .rail-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 4px;
+  }
+  .rail ol { list-style: none; margin: 0; padding: 0; }
+  .rail li { border-bottom: 1px solid var(--rule); }
+  .rail a {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    padding: 9px 0;
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .rail a:hover { color: var(--accent); }
+  .rail a em {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 11px;
+    color: var(--ink-3);
+    padding-top: 2px;
+  }
+  .rail .rail-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ink-3);
+    padding-top: 14px;
+  }
+
+  .column { min-width: 0; padding-top: 12px; display: flex; flex-direction: column; }
+  #split { order: 0; }
+  #step-1 { order: 1; }
+  #step-2 { order: 2; }
+  #step-3 { order: 3; }
+  #step-4 { order: 4; }
+  #step-5 { order: 5; }
+  #step-6 { order: 6; }
+  #gaps { order: 7; }
+  .page-foot { order: 8; }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 36px; scroll-margin-top: 20px; }
+  .sec-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: baseline; margin-bottom: 8px; }
+  .step-no {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.12;
+    letter-spacing: -.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .sec-sub {
+    grid-column: 2;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin: 6px 0 0;
+  }
+  .sec-body { max-width: 68ch; }
+  .sec-body > p { margin: 14px 0; }
+  .sec-body > p:first-child { margin-top: 18px; }
+  h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: .005em;
+    margin: 30px 0 10px;
+  }
+  code, .mono { font-family: var(--mono); font-size: .86em; }
+  p code, li code, td code, th code {
+    background: var(--surface-2);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--accent-ink);
+  }
+  ul.tight { padding-left: 20px; margin: 14px 0; }
+  ul.tight li { margin: 7px 0; }
+
+  /* ---------- panels ---------- */
+  .split { display: grid; gap: 18px; margin: 26px 0 8px; }
+  @media (min-width: 720px) { .split { grid-template-columns: 1fr 1fr; } }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 20px 22px 22px;
+    box-shadow: var(--shadow);
+  }
+  .panel h4 {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .panel .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 12px;
+  }
+  .panel ul { margin: 0; padding-left: 18px; font-size: 15px; color: var(--ink-2); }
+  .panel li { margin: 8px 0; }
+  .panel li b { color: var(--ink); font-weight: 600; }
+
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    margin: 22px 0;
+    font-size: 15px;
+    border-radius: 0 4px 4px 0;
+  }
+  .note.warn { border-left-color: var(--incon); background: color-mix(in srgb, var(--incon) 10%, var(--surface)); }
+  .note.stop { border-left-color: var(--failed); background: color-mix(in srgb, var(--failed) 9%, var(--surface)); }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 9px; }
+  .note .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink-2);
+  }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 400;
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  td.key { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; color: var(--accent-ink); }
+  td.dim { color: var(--ink-3); }
+
+  .verdict { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; font-weight: 500; white-space: nowrap; }
+  .verdict::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: currentColor; }
+  .v-proved { color: var(--proved); }
+  .v-failed { color: var(--failed); }
+  .v-incon  { color: var(--incon); }
+
+  /* ---------- code ---------- */
+  .code {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin: 20px 0;
+  }
+  .code-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px 8px 14px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-2);
+    border-radius: 6px 6px 0 0;
+  }
+  .code-head .path {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .copy {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 3px 9px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+  .copy[data-done="1"] { color: var(--proved); border-color: var(--proved); }
+  pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink);
+    tab-size: 2;
+  }
+  pre .c  { color: var(--ink-3); }
+  pre .k  { color: var(--accent); }
+  pre .s  { color: var(--proved); }
+  pre .n  { color: var(--incon); }
+  pre .b  { color: var(--failed); }
+  .v { color: var(--accent-ink); font-weight: 500; border-bottom: 1px dotted var(--rule-strong); }
+</style>
+<style>
+  /* ---------- config form ---------- */
+  .configurator {
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    margin: 26px 0 8px;
+    overflow: hidden;
+  }
+  .configurator > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-2);
+  }
+  .configurator > header h3 { margin: 0; font-size: 15px; }
+  .configurator > header p {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px 20px;
+    padding: 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .field input {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--ground);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 7px 9px;
+    width: 100%;
+    min-width: 0;
+  }
+  .field input[type="number"] { font-variant-numeric: tabular-nums; }
+  .field.invalid input { border-color: var(--failed); }
+  .field .hint {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    line-height: 1.4;
+  }
+  .field.invalid .hint { color: var(--failed); }
+  .fields-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 20px 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .reset {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    color: var(--ink-2);
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .reset:hover { color: var(--accent); border-color: var(--accent); }
+
+  .gap-list { counter-reset: gap; list-style: none; padding: 0; margin: 20px 0; }
+  .gap-list li {
+    counter-increment: gap;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .gap-list li::before {
+    content: counter(gap);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--failed);
+    padding-top: 3px;
+  }
+  .gap-list h4 { font-family: var(--display); font-size: 16px; margin: 0 0 4px; font-weight: 600; }
+  .gap-list p { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .gap-list p + p { margin-top: 7px; }
+
+  footer.page-foot {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    justify-content: space-between;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow"><b>SLOProof</b> · operator reference · forge-tyr</p>
+    <h1>Configure a service</h1>
+    <p class="standfirst">
+      SLOProof puts a service under evidence-gated recovery: an agent proposes a route change, and a
+      deterministic verifier reading Elasticsearch decides whether the measurements allow it to expand.
+      Everything below is what a service has to supply before a run can produce a verdict —
+      <strong>identity, two versions, one weighted route, an evidence path, and a frozen contract</strong>.
+      <code>checkout</code> is the reference implementation; the defaults in every field are its real values.
+    </p>
+    <div class="meta-row">
+      <span><b>Substrate</b> EKS · Envoy Gateway · Gateway API</span>
+      <span><b>Evidence</b> Elastic Serverless 9.6</span>
+      <span><b>Reference run</b> demo-1 · 37,999 requests</span>
+      <span><b>Revised</b> 18 Sep 2026</span>
+      <span><button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch color theme">Theme: system</button></span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <nav class="rail" aria-label="Configuration steps">
+      <p class="rail-title">Order is load-bearing</p>
+      <ol>
+        <li><a href="#step-1"><em>01</em> Identity &amp; guard</a></li>
+        <li><a href="#step-2"><em>02</em> Two versions</a></li>
+        <li><a href="#step-3"><em>03</em> Weighted route</a></li>
+        <li><a href="#step-4"><em>04</em> Evidence path</a></li>
+        <li><a href="#step-5"><em>05</em> Frozen contract</a></li>
+        <li><a href="#step-6"><em>06</em> Verdict inputs</a></li>
+        <li><a href="#gaps"><em>!!</em> Known gaps</a></li>
+      </ol>
+      <p class="rail-note">You cannot freeze a contract before the route exists, and you cannot verify a window before evidence lands. Work down.</p>
+    </nav>
+
+    <main class="column">
+
+      <section id="split" aria-labelledby="split-h">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">§</span>
+          <h2 id="split-h">What you supply, what you reuse</h2>
+          <p class="sec-sub">The reusability claim, stated as two lists</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            Reuse is the point: a second service should be configuration, not a second orchestrator.
+            The spine below is service-agnostic today. The right-hand column is the work, and the last
+            two rows of it are the ones that cannot be filled in by copying checkout.
+          </p>
+        </div>
+        <div class="split">
+          <div class="panel">
+            <p class="kicker">Shared spine — reuse unchanged</p>
+            <h4>One controller, one verifier, one ledger</h4>
+            <ul>
+              <li><b>Indices</b> <code>sloproof-requests</code>, <code>-contracts</code>, <code>-ledger</code> with strict mappings</li>
+              <li><b>Three scoped keys</b> ingest writes, verifier only reads, controller writes contracts and ledger</li>
+              <li><b>Load generator</b> constant arrival rate, bulk shipper, <code>-service</code> flag</li>
+              <li><b>Guard</b> <code>scripts/_guard.sh</code> pins the kubeconfig and asserts the context</li>
+              <li><b>Weight executor</b> <code>set-weights.sh</code> rewrites weights on backends the route already names</li>
+              <li><b>ES|QL queries</b> parameterized by run and window</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <p class="kicker">Per service — you supply</p>
+            <h4>Identity, workloads, route, contract</h4>
+            <ul>
+              <li><b>Identity</b> service name, namespace, app label, route name</li>
+              <li><b>Two versions</b> a known-good and an incident configuration of one image</li>
+              <li><b>One HTTPRoute</b> with exactly one header-free rule and exactly two backends</li>
+              <li><b>A contract</b> naming the service it governs, with its own thresholds</li>
+              <li><b>A correctness check</b> beyond HTTP 200 — search needs a result fixture, auth needs invalid credentials still rejected</li>
+              <li><b>An SLO-bearing endpoint</b> that echoes correlation headers and its config hash</li>
+            </ul>
+          </div>
+        </div>
+        <div class="note">
+          <span class="label">The honest version</span>
+          <p>
+            Checkout proves the routing and the evidence path, not the reuse. The verifier that turns
+            measurements into <span class="verdict v-proved">PROVED</span> does not exist yet
+            (<code>src/control/</code>), and three scripts still carry the name <code>checkout</code> in
+            code rather than in configuration. Both are listed under <a href="#gaps">known gaps</a>.
+          </p>
+        </div>
+      </section>
+
+      <section id="step-5" aria-labelledby="h1-5">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">05</span>
+          <h2 id="h1-5">Freeze the acceptance contract</h2>
+          <p class="sec-sub">Criteria are evidence, not knobs to turn after seeing the trial</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            Freeze one contract document before the first recovery weight change. Store the exact body,
+            its SHA-256 hash, the service and run identities, who froze it, and the freeze time in
+            <code>sloproof-contracts</code>. Every later receipt and verdict must carry that same hash.
+            If the service identity, route, criteria, or behavior fingerprint changes, expire the trial
+            and begin a new run; never edit a contract in place.
+          </p>
+        </div>
+
+        <div class="configurator">
+          <header>
+            <h3>Set the service-specific criteria</h3>
+            <p>updates the contract and verification examples below</p>
+          </header>
+          <div class="fields">
+            <div class="field" id="f-success">
+              <label for="in-success">Minimum success</label>
+              <input id="in-success" data-f="success" type="number" min="0" max="1" step="0.001" value="0.99">
+              <span class="hint">fraction from 0 through 1</span>
+            </div>
+            <div class="field" id="f-p95">
+              <label for="in-p95">Maximum p95</label>
+              <input id="in-p95" data-f="p95" type="number" min="1" step="1" value="300">
+              <span class="hint">milliseconds; comparison is &lt;</span>
+            </div>
+            <div class="field" id="f-windows">
+              <label for="in-windows">Windows</label>
+              <input id="in-windows" data-f="windows" type="number" min="1" step="1" value="3">
+              <span class="hint">all must pass</span>
+            </div>
+            <div class="field" id="f-seconds">
+              <label for="in-seconds">Window length</label>
+              <input id="in-seconds" data-f="seconds" type="number" min="1" step="1" value="60">
+              <span class="hint">seconds, non-overlapping</span>
+            </div>
+            <div class="field" id="f-samples">
+              <label for="in-samples">Minimum samples</label>
+              <input id="in-samples" data-f="samples" type="number" min="1" step="1" value="400">
+              <span class="hint">per version, per window</span>
+            </div>
+            <div class="field" id="f-lag">
+              <label for="in-lag">Ingestion allowance</label>
+              <input id="in-lag" data-f="lag" type="number" min="0" step="1" value="30">
+              <span class="hint">seconds after window close</span>
+            </div>
+          </div>
+          <div class="fields-foot">
+            <span>These defaults reproduce <code>contracts/checkout-slo.json</code>.</span>
+          </div>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">contracts/<span data-k="contractFile">checkout-slo.json</span> · canonical acceptance body</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre>{
+  <span class="k">"contract_version"</span>: <span class="s">"1.0"</span>,
+  <span class="k">"service"</span>: <span class="s">"<span class="v" data-k="contractService">checkout</span>"</span>,
+  <span class="k">"endpoint"</span>: <span class="s">"<span class="v" data-k="contractPath">/checkout</span>"</span>,
+  <span class="k">"observation"</span>: {
+    <span class="k">"window_count"</span>: <span class="n" data-k="contractWindows">3</span>,
+    <span class="k">"window_seconds"</span>: <span class="n" data-k="contractSeconds">60</span>,
+    <span class="k">"overlapping"</span>: false,
+    <span class="k">"anchor"</span>: <span class="s">"executor_receipt.route_effective_at"</span>,
+    <span class="k">"route_convergence_allowance_seconds"</span>: 30
+  },
+  <span class="k">"eligibility"</span>: {
+    <span class="k">"traffic_class"</span>: [<span class="s">"ordinary"</span>],
+    <span class="k">"exclude_traffic_class"</span>: [<span class="s">"synthetic"</span>, <span class="s">"warmup"</span>],
+    <span class="k">"min_samples_per_window"</span>: <span class="n" data-k="contractSamples">400</span>
+  },
+  <span class="k">"criteria"</span>: {
+    <span class="k">"success_rate_min"</span>: <span class="n" data-k="contractSuccess">0.99</span>,
+    <span class="k">"p95_latency_ms_max"</span>: <span class="n" data-k="contractP95">300</span>,
+    <span class="k">"percentile_method"</span>: <span class="s">"tdigest"</span>,
+    <span class="k">"timeout_counts_as"</span>: <span class="s">"failure"</span>,
+    <span class="k">"http_success_statuses"</span>: [200]
+  },
+  <span class="k">"freshness"</span>: {
+    <span class="k">"ingestion_lag_allowance_seconds"</span>: <span class="n" data-k="contractLag">30</span>,
+    <span class="k">"empty_result_is_never_zero_errors"</span>: true
+  },
+  <span class="k">"verdicts"</span>: {
+    <span class="k">"all_windows_pass"</span>: <span class="s">"PROVED"</span>,
+    <span class="k">"measured_breach"</span>: <span class="s">"FAILED"</span>,
+    <span class="k">"missing_stale_or_underpowered"</span>: <span class="s">"INCONCLUSIVE"</span>
+  }
+}</pre>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">shell · produce stable bytes and record the freeze</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre>CONTRACT=contracts/<span class="v" data-k="contractFile2">checkout-slo.json</span>
+CANONICAL=$(jq -cS . "$CONTRACT")
+CONTRACT_HASH=$(printf %s "$CANONICAL" | shasum -a 256 | awk '{print $1}')
+FROZEN_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+<span class="c"># Store CANONICAL unchanged in sloproof-contracts with:</span>
+<span class="c"># run_id=<span data-k="freezeRun">demo-1</span>, service=<span data-k="freezeService">checkout</span>, contract_hash,</span>
+<span class="c"># frozen_at, frozen_by, and the /version snapshots for both versions.</span>
+printf 'contract %s frozen at %s\n' "$CONTRACT_HASH" "$FROZEN_AT"</pre>
+        </div>
+
+        <div class="note warn">
+          <span class="label">A hash proves identity, not immutability</span>
+          <p>
+            Elasticsearch privileges do not make an indexed contract append-only. The hash lets every
+            consumer prove it evaluated the same bytes; organizational controls and scoped credentials
+            prevent replacement. If a stored body and its hash disagree, the only safe result is
+            <span class="verdict v-incon">INCONCLUSIVE</span>.
+          </p>
+        </div>
+      </section>
+
+      <section id="step-6" aria-labelledby="h1-6">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">06</span>
+          <h2 id="h1-6">Collect the verdict inputs</h2>
+          <p class="sec-sub">Completeness first, metrics second, promotion last</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            Wait for <span data-k="verifyLag">30</span> seconds of ingestion allowance after each window
+            closes, then run the saved queries with the read-only verifier key. The verifier must evaluate
+            <span data-k="verifyWindows">3</span> closed, non-overlapping windows anchored to the observed
+            <code>route_effective_at</code>. Planner prose, agent output, a successful route patch, and a
+            requested 10/90 split are not verdict inputs.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Order</th><th>Saved query / evidence</th><th>Gate</th><th>Failure result</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td class="key">evidence-completeness</td><td>each version has ≥ <span data-k="gateSamples">400</span> samples, one config hash, and a closed time range</td><td><span class="verdict v-incon">INCONCLUSIVE</span></td></tr>
+              <tr><td class="num">2</td><td class="key">loadgen reconciliation</td><td>completed attempts equal searchable request documents</td><td><span class="verdict v-incon">INCONCLUSIVE</span></td></tr>
+              <tr><td class="num">3</td><td class="key">traffic-split</td><td>served counts demonstrate the bounded trial actually occurred</td><td><span class="verdict v-incon">INCONCLUSIVE</span></td></tr>
+              <tr><td class="num">4</td><td class="key">window-metrics</td><td>success ≥ <span data-k="gateSuccess">0.99</span> and p95 &lt; <span data-k="gateP95">300</span> ms for every required window</td><td><span class="verdict v-failed">FAILED</span> on a measured breach</td></tr>
+              <tr><td class="num">5</td><td class="key">provenance snapshots</td><td>route UID, contract hash, image digest and both config hashes still match the freeze</td><td><span class="verdict v-incon">INCONCLUSIVE</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">shell · one closed window, inclusive start and exclusive end</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre>export WINDOW_START=<span class="s">'&lt;route_effective_at + convergence allowance&gt;'</span>
+export WINDOW_END=<span class="s">'&lt;WINDOW_START + <span class="v" data-k="verifySeconds">60</span>s&gt;'</span>
+
+elastic/query.sh evidence-completeness \
+  run_id=<span class="v" data-k="queryRun1">demo-1</span> window_start="$WINDOW_START" window_end="$WINDOW_END"
+elastic/query.sh traffic-split \
+  run_id=<span class="v" data-k="queryRun2">demo-1</span> window_start="$WINDOW_START" window_end="$WINDOW_END"
+elastic/query.sh window-metrics \
+  run_id=<span class="v" data-k="queryRun3">demo-1</span> window_start="$WINDOW_START" window_end="$WINDOW_END"</pre>
+        </div>
+
+        <h3>Verdict semantics</h3>
+        <div class="split">
+          <div class="panel">
+            <p class="kicker">Decisive results</p>
+            <h4>Measured pass or measured breach</h4>
+            <ul>
+              <li><b><span class="verdict v-proved">PROVED</span></b> every required window is complete and every criterion passes.</li>
+              <li><b><span class="verdict v-failed">FAILED</span></b> evidence is complete and at least one measured criterion breaches.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <p class="kicker">No decision</p>
+            <h4>Missing evidence is never success</h4>
+            <ul>
+              <li><b><span class="verdict v-incon">INCONCLUSIVE</span></b> for empty, stale, underpowered, inconsistent, or unreconciled evidence.</li>
+              <li><b>Promotion is forbidden</b> for both <span class="verdict v-failed">FAILED</span> and <span class="verdict v-incon">INCONCLUSIVE</span>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Agents remain outside the decision path</h3>
+        <div class="code">
+          <div class="code-head">
+            <span class="path">shell · advisory, explanation, and judge questions</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre>scripts/agent.sh preflight --run-id <span class="v" data-k="agentRun1">demo-1</span>
+scripts/agent.sh investigate --run-id <span class="v" data-k="agentRun2">demo-1</span> \
+  --window-start "$WINDOW_START" --window-end "$WINDOW_END"
+
+<span class="c"># Only after the deterministic verifier has written a verdict:</span>
+scripts/agent.sh narrate --run-id <span class="v" data-k="agentRun3">demo-1</span>
+scripts/agent.sh ask --run-id <span class="v" data-k="agentRun4">demo-1</span> \
+  "what share of traffic did v1 serve during the trial?"</pre>
+        </div>
+        <p class="sec-body">
+          The investigator can recommend, the narrator can explain an existing verdict, and the briefer can
+          answer questions with cited query IDs. None may write a verdict or patch the route. Promotion is a
+          separate executor action and is permitted only when a valid <span class="verdict v-proved">PROVED</span>
+          record names the expected contract hash, route UID, and current weights.
+        </p>
+
+        <div class="note stop">
+          <span class="label">Stop conditions</span>
+          <p>
+            Stop without promotion if any window is still open, the route effective time is unknown, the
+            load generator cannot reconcile counts, either version is underpowered, more than one config
+            hash appears, the contract or route identity changed, or the verifier is unavailable. Waiting
+            or escalating is safer than turning absence into a pass.
+          </p>
+        </div>
+      </section>
+
+      <section id="gaps" aria-labelledby="gaps-h">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">!!</span>
+          <h2 id="gaps-h">Known gaps before this is reusable</h2>
+          <p class="sec-sub">What the repository does not yet justify claiming</p>
+        </div>
+        <ol class="gap-list">
+          <li>
+            <div>
+              <h4>The deterministic control plane is not implemented</h4>
+              <p><code>src/control/</code> is absent. The repository has measurements, saved ES|QL queries, routing scripts, and agent advisories, but no program that freezes a contract, evaluates all windows, writes a verdict, or conditionally promotes.</p>
+              <p><strong>Close it:</strong> implement the verifier and ledger writer first; add the state machine and expiry watchdog after the two verdict scenarios are reproducible.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>The load generator is not packaged for in-cluster execution</h4>
+              <p>The first real run measured from the operator laptop and added enough network latency to fail healthy v1. There is no load-generator image or Kubernetes workload in this repository yet.</p>
+              <p><strong>Close it:</strong> build and deploy loadgen beside the gateway, then measure index-visibility lag and replace the provisional <span data-k="gapLag">30</span>-second allowance.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Service reuse is documented, not automated</h4>
+              <p>The scripts and manifests still contain checkout-specific filenames, resource names, placeholders, and <code>CHECKOUT_IMAGE</code>. This browser configurator updates examples only; it does not write repository files.</p>
+              <p><strong>Close it:</strong> introduce one validated service descriptor and render manifests, contracts, and commands from it in CI.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Route effectiveness is not observed automatically</h4>
+              <p>Weight receipts correctly leave <code>route_effective_at</code> null, but no controller fills it from served-traffic evidence. A patched HTTPRoute therefore cannot start a verification window by itself.</p>
+              <p><strong>Close it:</strong> require a stable observed split before stamping the effective time, and bind that observation to the receipt's route UID and resourceVersion.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>The local smoke script can report a false green</h4>
+              <p>It uses fixed ports, does not prove the process it started owns them, prints metrics without asserting the contract, and can exit zero when another service answers. Treat its current output as diagnostic, not a test result.</p>
+              <p><strong>Close it:</strong> allocate free ports, fail on bind errors, verify <code>/version</code> identity, and assert the expected success and latency ranges.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Correctness remains service-specific</h4>
+              <p>HTTP status and latency are enough for the simulated checkout, not for an arbitrary production API. A fast 200 with the wrong body can still be a failed recovery.</p>
+              <p><strong>Close it:</strong> attach an operator-owned correctness probe or fixture to each service contract and ingest its result as explicit evidence.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <footer class="page-foot">
+        <span>SLOProof · evidence before expansion</span>
+        <span>Source of truth: repository code and contracts · 18 Sep 2026</span>
+      </footer>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  "use strict";
+
+  // The document is assembled in two authoring blocks. Put the numbered steps
+  // into their reading order before binding the configurator.
+  const main = document.querySelector("main.column");
+  const step5 = document.getElementById("step-5");
+  ["step-1", "step-2", "step-3", "step-4"].forEach(id => {
+    main.insertBefore(document.getElementById(id), step5);
+  });
+  main.appendChild(document.querySelector("footer.page-foot"));
+
+  const defaults = {
+    service: "checkout", namespace: "checkout", route: "checkout-route",
+    path: "/checkout", cluster: "sloproof", region: "us-west-2",
+    gwclass: "eg", runid: "demo-1", success: "0.99", p95: "300",
+    windows: "3", seconds: "60", samples: "400", lag: "30"
+  };
+  const storageKey = "sloproof-service-config-v1";
+  const inputs = [...document.querySelectorAll("[data-f]")];
+  const dnsLabel = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+  const routeName = /^[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?$/;
+
+  const value = key => document.querySelector(`[data-f="${key}"]`).value.trim();
+  const derived = () => {
+    const v = Object.fromEntries(inputs.map(input => [input.dataset.f, input.value.trim()]));
+    return {
+      ...v,
+      v1: `${v.service}-v1`, v2: `${v.service}-v2`,
+      gateway: `${v.service}-gateway`, cm1: `${v.service}-v1-config`,
+      applabel: `app=${v.service}`, contractFile: `${v.service}-slo.json`
+    };
+  };
+
+  const bindings = {
+    cluster: "cluster", cluster2: "cluster", cluster3: "cluster",
+    region: "region", region2: "region", region3: "region",
+    ns: "namespace", ns2: "namespace", ns3: "namespace", ns4: "namespace", ns5: "namespace",
+    route: "route", route2: "route", route3: "route", gwclass: "gwclass",
+    applabel: "applabel", applabel2: "applabel",
+    svc2: "service", svc3: "service", svc4: "service", svc5: "service",
+    v1: "v1", v1b: "v1", v2: "v2", v2b: "v2", cm1: "cm1",
+    gateway: "gateway", gateway2: "gateway",
+    path: "path", path2: "path", path3: "path",
+    runid: "runid", runid2: "runid",
+    contractFile: "contractFile", contractFile2: "contractFile",
+    contractService: "service", freezeService: "service",
+    contractPath: "path", contractWindows: "windows", contractSeconds: "seconds",
+    contractSamples: "samples", contractSuccess: "success", contractP95: "p95",
+    contractLag: "lag", freezeRun: "runid", verifyLag: "lag", verifyWindows: "windows",
+    gateSamples: "samples", gateSuccess: "success", gateP95: "p95", verifySeconds: "seconds",
+    queryRun1: "runid", queryRun2: "runid", queryRun3: "runid",
+    agentRun1: "runid", agentRun2: "runid", agentRun3: "runid", agentRun4: "runid",
+    gapLag: "lag"
+  };
+
+  function valid(input) {
+    const key = input.dataset.f;
+    const raw = input.value.trim();
+    if (["service", "namespace", "cluster", "gwclass"].includes(key)) return dnsLabel.test(raw);
+    if (key === "route") return routeName.test(raw);
+    if (key === "path") return /^\/[\x21-\x7e]*$/.test(raw);
+    if (key === "region") return /^[a-z]{2}(?:-gov)?-[a-z]+-\d$/.test(raw);
+    if (key === "runid") return /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(raw);
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return false;
+    if (key === "success") return n >= 0 && n <= 1;
+    if (key === "lag") return Number.isInteger(n) && n >= 0;
+    return Number.isInteger(n) && n > 0;
+  }
+
+  function render() {
+    const v = derived();
+    inputs.forEach(input => {
+      const ok = valid(input);
+      input.closest(".field").classList.toggle("invalid", !ok);
+      input.setAttribute("aria-invalid", String(!ok));
+    });
+    document.querySelectorAll("[data-k]").forEach(node => {
+      const key = bindings[node.dataset.k];
+      if (key && v[key] !== undefined) node.textContent = v[key];
+    });
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(inputs.map(i => [i.dataset.f, i.value]))));
+    } catch (_) {}
+  }
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    inputs.forEach(input => {
+      if (Object.prototype.hasOwnProperty.call(saved, input.dataset.f)) input.value = saved[input.dataset.f];
+    });
+  } catch (_) {}
+  inputs.forEach(input => input.addEventListener("input", render));
+
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    inputs.forEach(input => input.value = defaults[input.dataset.f]);
+    render();
+  });
+
+  document.querySelectorAll(".copy").forEach(button => {
+    button.addEventListener("click", async () => {
+      const text = button.closest(".code").querySelector("pre").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = "Copied";
+        button.dataset.done = "1";
+        window.setTimeout(() => {
+          button.textContent = "Copy";
+          delete button.dataset.done;
+        }, 1600);
+      } catch (_) {
+        button.textContent = "Select text";
+      }
+    });
+  });
+
+  const themeButton = document.getElementById("theme-toggle");
+  const themes = ["system", "light", "dark"];
+  let theme = "system";
+  try { theme = localStorage.getItem("sloproof-theme") || "system"; } catch (_) {}
+  function setTheme(next) {
+    theme = themes.includes(next) ? next : "system";
+    if (theme === "system") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.dataset.theme = theme;
+    themeButton.textContent = `Theme: ${theme}`;
+    try { localStorage.setItem("sloproof-theme", theme); } catch (_) {}
+  }
+  themeButton.addEventListener("click", () => setTheme(themes[(themes.indexOf(theme) + 1) % themes.length]));
+  setTheme(theme);
+  render();
+});
+</script>
+
+      <section id="step-1" aria-labelledby="h1-1">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">01</span>
+          <h2 id="h1-1">Identity and the cluster guard</h2>
+          <p class="sec-sub">Nothing touches a cluster until the context is named out loud</p>
+        </div>
+
+        <div class="configurator">
+          <header>
+            <h3>Name your service</h3>
+            <p>rewrites every command, manifest and contract on this page</p>
+          </header>
+          <div class="fields">
+            <div class="field" id="f-service">
+              <label for="in-service">Service</label>
+              <input id="in-service" data-f="service" value="checkout" spellcheck="false" autocomplete="off">
+              <span class="hint">lowercase DNS-1123 label</span>
+            </div>
+            <div class="field" id="f-namespace">
+              <label for="in-namespace">Namespace</label>
+              <input id="in-namespace" data-f="namespace" value="checkout" spellcheck="false" autocomplete="off">
+              <span class="hint">NAMESPACE</span>
+            </div>
+            <div class="field" id="f-route">
+              <label for="in-route">HTTPRoute</label>
+              <input id="in-route" data-f="route" value="checkout-route" spellcheck="false" autocomplete="off">
+              <span class="hint">ROUTE_NAME</span>
+            </div>
+            <div class="field" id="f-path">
+              <label for="in-path">SLO path</label>
+              <input id="in-path" data-f="path" value="/checkout" spellcheck="false" autocomplete="off">
+              <span class="hint">the one measured endpoint</span>
+            </div>
+            <div class="field" id="f-cluster">
+              <label for="in-cluster">Cluster</label>
+              <input id="in-cluster" data-f="cluster" value="sloproof" spellcheck="false" autocomplete="off">
+              <span class="hint">CLUSTER_NAME</span>
+            </div>
+            <div class="field" id="f-region">
+              <label for="in-region">AWS region</label>
+              <input id="in-region" data-f="region" value="us-west-2" spellcheck="false" autocomplete="off">
+              <span class="hint">AWS_REGION</span>
+            </div>
+            <div class="field" id="f-gwclass">
+              <label for="in-gwclass">Gateway class</label>
+              <input id="in-gwclass" data-f="gwclass" value="eg" spellcheck="false" autocomplete="off">
+              <span class="hint">eg = Envoy Gateway</span>
+            </div>
+            <div class="field" id="f-runid">
+              <label for="in-runid">Run ID</label>
+              <input id="in-runid" data-f="runid" value="demo-1" spellcheck="false" autocomplete="off">
+              <span class="hint">scopes every record</span>
+            </div>
+          </div>
+          <div class="fields-foot">
+            <span>Stored in this browser only. Nothing is sent anywhere.</span>
+            <button class="reset" type="button" id="reset-btn">Reset to checkout</button>
+          </div>
+        </div>
+
+        <div class="sec-body">
+          <p>
+            The guard exists because this laptop's ambient kubectl contexts are unrelated production
+            clusters. <code>scripts/_guard.sh</code> pins <code>KUBECONFIG</code> to a gitignored file
+            inside the repo — so those contexts are not merely rejected, they are invisible — and then
+            refuses unless the context inside it equals the one you exported by hand.
+          </p>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">shell · one export block per operator, per run</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre><span class="c"># AWS first: kubectl authenticates to EKS by shelling out to the aws CLI.</span>
+export AWS_PROFILE=<span class="v" data-k="cluster">sloproof</span>
+export AWS_REGION=<span class="v" data-k="region">us-west-2</span>
+
+<span class="c"># Identity of the service under recovery.</span>
+export NAMESPACE=<span class="v" data-k="ns">checkout</span>
+export ROUTE_NAME=<span class="v" data-k="route">checkout-route</span>
+export APP_LABEL=<span class="v" data-k="applabel">app=checkout</span>
+export CLUSTER_NAME=<span class="v" data-k="cluster2">sloproof</span>
+export RUN_ID=<span class="v" data-k="runid">demo-1</span>
+
+<span class="c"># Required, no defaults: the guard and deploy.sh refuse without them.</span>
+export SLOPROOF_KUBE_CONTEXT=<span class="c">'&lt;the context eks-up.sh prints&gt;'</span>
+export GATEWAY_CLASS_NAME=<span class="v" data-k="gwclass">eg</span>
+export CHECKOUT_IMAGE=<span class="c">'&lt;acct&gt;.dkr.ecr.<span class="v" data-k="region2">us-west-2</span>.amazonaws.com/sloproof-<span class="v" data-k="svc2">checkout</span>@sha256:...'</span></pre>
+        </div>
+
+        <div class="note stop">
+          <span class="label">What a refusal looks like</span>
+          <p class="mono" style="font-size:12.5px">
+            $ scripts/set-weights.sh 10 90<br>
+            REFUSING: no pinned kubeconfig at .../.kube/sloproof.config<br>
+            &nbsp;&nbsp;Create the cluster first:&nbsp; scripts/eks-up.sh
+          </p>
+          <p>
+            Every guard failure is a refusal with the reason and the next command, never a silent
+            fallback to whatever context happened to be current.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">Environment variables read by the scripts</caption>
+            <thead>
+              <tr><th>Variable</th><th>Default</th><th>Read by</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="key">SLOPROOF_KUBE_CONTEXT</td><td class="num dim">none — required</td><td>every cluster script, via the guard</td></tr>
+              <tr><td class="key">SLOPROOF_KUBECONFIG</td><td class="num"><span>.kube/sloproof.config</span></td><td>guard; pinned, gitignored</td></tr>
+              <tr><td class="key">NAMESPACE</td><td class="num"><span data-k="ns2">checkout</span></td><td>deploy, set-weights, set-profile, reset</td></tr>
+              <tr><td class="key">ROUTE_NAME</td><td class="num"><span data-k="route2">checkout-route</span></td><td>set-weights</td></tr>
+              <tr><td class="key">APP_LABEL</td><td class="num"><span data-k="applabel2">app=checkout</span></td><td>deploy — rolls out whatever matches</td></tr>
+              <tr><td class="key">CLUSTER_NAME</td><td class="num"><span data-k="cluster3">sloproof</span></td><td>eks-up, eks-down</td></tr>
+              <tr><td class="key">AWS_REGION</td><td class="num"><span data-k="region3">us-west-2</span></td><td>eks-up renders the ClusterConfig</td></tr>
+              <tr><td class="key">GATEWAY_CLASS_NAME</td><td class="num dim">none — required</td><td>deploy; swap to switch gateway implementations</td></tr>
+              <tr><td class="key">CHECKOUT_IMAGE</td><td class="num dim">none — required</td><td>deploy; pin by digest, not tag</td></tr>
+              <tr><td class="key">RUN_ID</td><td class="num dim">run-&lt;utc timestamp&gt;</td><td>deploy stamps it into both ConfigMaps</td></tr>
+              <tr><td class="key">LEDGER_DIR</td><td class="num">evidence</td><td>routing and profile receipts</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="step-2" aria-labelledby="h1-2">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">02</span>
+          <h2 id="h1-2">Two versions of one image</h2>
+          <p class="sec-sub">The regression must be a configuration difference, not a second build</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            <span class="mono" data-k="v1">checkout-v1</span> and <span class="mono" data-k="v2">checkout-v2</span>
+            run the same binary and differ only by ConfigMap. Say that out loud in the demo: the recovery
+            is a configuration rollback, not a code revert. The routing proof is unaffected — traffic really
+            does move between two independently addressable versions.
+          </p>
+          <p>
+            Faults are read from the environment at process start. There is deliberately
+            <strong>no fault-toggle endpoint</strong>: the recovery executor must not be able to cause the
+            incident it is trusted to repair. Profiles are changed by the operator, under the operator's
+            identity, with a rollout.
+          </p>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">k8s · ConfigMap for the known-good version</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ConfigMap
+<span class="k">metadata</span>:
+  <span class="k">name</span>: <span class="v" data-k="cm1">checkout-v1-config</span>
+  <span class="k">namespace</span>: <span class="v" data-k="ns3">checkout</span>
+  <span class="k">labels</span>: { app: <span class="v" data-k="svc3">checkout</span>, version: v1, app.kubernetes.io/part-of: sloproof }
+<span class="k">data</span>:
+  <span class="k">SERVICE_NAME</span>: <span class="s">"<span class="v" data-k="svc4">checkout</span>"</span>
+  <span class="k">SERVICE_VERSION</span>: <span class="s">"v1"</span>
+  <span class="k">FAULT_PROFILE</span>: <span class="s">"healthy"</span>        <span class="c"># "bad-recovery" for the rejected-trial run</span>
+  <span class="k">RUN_ID</span>: <span class="s">"__RUN_ID__"</span>
+  <span class="k">IMAGE_DIGEST</span>: <span class="s">"__CHECKOUT_IMAGE__"</span>
+  <span class="k">PORT</span>: <span class="s">"8080"</span>
+  <span class="k">REQUEST_TIMEOUT_MS</span>: <span class="s">"3000"</span>
+  <span class="k">READINESS_DELAY_MS</span>: <span class="s">"2000"</span>
+  <span class="k">SHUTDOWN_GRACE_MS</span>: <span class="s">"5000"</span>   <span class="c"># must stay under terminationGracePeriodSeconds: 30</span></pre>
+        </div>
+
+        <h3>Fault profiles</h3>
+        <p class="sec-body">
+          Presets live in <code>src/checkout/profiles.json</code> and are selected with
+          <code>FAULT_PROFILE</code>; explicit env beats the preset, so a one-off experiment never requires
+          editing the file. Measured locally over 300 requests at 40 concurrent:
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Profile</th><th>Injected</th><th>Success</th><th>p95</th><th>Role in the run</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="key">healthy</td><td class="dim">none</td>
+                <td class="num">100%</td><td class="num">82 ms</td>
+                <td>baseline and recovery candidate — passes the contract with room</td>
+              </tr>
+              <tr>
+                <td class="key">checkout-regression</td><td class="dim">+800 ms, 500 every 5th request</td>
+                <td class="num">80%</td><td class="num">878 ms</td>
+                <td>the incident</td>
+              </tr>
+              <tr>
+                <td class="key">bad-recovery</td><td class="dim">+450 ms</td>
+                <td class="num">100%</td><td class="num">541 ms</td>
+                <td>successes alone are not a recovery — latency breach, <span class="verdict v-failed">FAILED</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="label">Two properties are load-bearing</span>
+          <p>
+            <strong>Deterministic.</strong> Errors come from an atomic request counter and jitter from the
+            request sequence via splitmix64, so a rerun reproduces the distribution. Counters are per-pod
+            and reset on restart — note that when reconciling a window that spans a rollout.
+          </p>
+          <p>
+            <strong>Scoped to the SLO path.</strong> Health probes are never faulted. If liveness tracked
+            injected errors, Kubernetes would restart the faulty version and delete the incident before it
+            could be measured.
+          </p>
+        </div>
+
+        <h3>What a new service has to expose</h3>
+        <p class="sec-body">Four endpoints and three headers. Without them the evidence cannot be attributed and the verifier cannot exclude what the contract excludes.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Surface</th><th>Requirement</th></tr></thead>
+            <tbody>
+              <tr><td class="key">POST <span data-k="path">/checkout</span></td><td>the only SLO-bearing path; returns version, request ID, run ID, outcome, duration and config hash, mirrored as <code>x-sloproof-*</code> response headers so the generator attributes outcomes without parsing bodies</td></tr>
+              <tr><td class="key">GET /healthz</td><td>liveness; stays green while a fault is active</td></tr>
+              <tr><td class="key">GET /readyz</td><td>readiness; fails immediately on SIGTERM so the pod leaves endpoints before connections stop</td></tr>
+              <tr><td class="key">GET /version</td><td>provenance: version, fault profile, 16-char config hash, image digest, effective config</td></tr>
+              <tr><td class="key">x-request-id</td><td>accepted and echoed into every record</td></tr>
+              <tr><td class="key">x-run-id</td><td>scopes the run the verifier evaluates</td></tr>
+              <tr><td class="key">x-sloproof-traffic-class</td><td><code>ordinary</code> | <code>synthetic</code> | <code>warmup</code> — excluded by explicit field, never by timestamp guesswork</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="step-3" aria-labelledby="h1-3">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">03</span>
+          <h2 id="h1-3">One weighted route</h2>
+          <p class="sec-sub">Rule order is load-bearing; only one rule is executor-writable</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            The route carries three rules. Two are operator-owned pins selected by
+            <code>x-sloproof-target</code>, so synthetic journeys and preflight checks can address one
+            version directly; that traffic is labelled <code>synthetic</code> and excluded from the counts
+            the verifier reads. The third is ordinary traffic and is the only rule the recovery executor
+            may modify — and only its <code>backendRefs</code> weights.
+          </p>
+          <p>
+            <code>set-weights.sh</code> finds that rule <em>by shape</em> — the single header-free rule —
+            rather than by a fixed index, and refuses if that is ambiguous. It then rewrites the weights on
+            whatever backends the route already names. Hardcoding backend names would both break reuse and
+            silently clobber a backend somebody else had edited.
+          </p>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">k8s · the ordinary-traffic rule</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre><span class="k">apiVersion</span>: gateway.networking.k8s.io/v1
+<span class="k">kind</span>: HTTPRoute
+<span class="k">metadata</span>:
+  <span class="k">name</span>: <span class="v" data-k="route3">checkout-route</span>
+  <span class="k">namespace</span>: <span class="v" data-k="ns4">checkout</span>
+<span class="k">spec</span>:
+  <span class="k">parentRefs</span>:
+    - { name: <span class="v" data-k="gateway">checkout-gateway</span> }
+  <span class="k">rules</span>:
+    <span class="c"># 0,1 — operator pins. Omitted here; matched on x-sloproof-target: v1|v2.</span>
+    <span class="c"># 2  — ordinary traffic: exactly one header-free rule, exactly two backends.</span>
+    - <span class="k">matches</span>:
+        - path: { type: PathPrefix, value: <span class="v" data-k="path2">/checkout</span> }
+      <span class="k">backendRefs</span>:
+        - { name: <span class="v" data-k="v1b">checkout-v1</span>, port: 80, weight: <span class="n">100</span> }
+        - { name: <span class="v" data-k="v2b">checkout-v2</span>, port: 80, weight: <span class="n">0</span> }</pre>
+        </div>
+
+        <h3>The four phases</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Phase</th><th>Command</th><th>Split</th><th>Who runs it</th></tr></thead>
+            <tbody>
+              <tr><td>Healthy baseline</td><td class="key">set-weights.sh 100 0</td><td class="num">100 / 0</td><td class="dim">operator</td></tr>
+              <tr><td>Incident</td><td class="key">set-weights.sh 0 100</td><td class="num">0 / 100</td><td class="dim">operator — label it manual unless detection is automated</td></tr>
+              <tr><td>Recovery trial</td><td class="key">set-weights.sh 10 90</td><td class="num">10 / 90</td><td class="dim">executor, on an allowed action</td></tr>
+              <tr><td>Promotion</td><td class="key">set-weights.sh 100 0</td><td class="num">100 / 0</td><td class="dim">executor, only on <span class="verdict v-proved">PROVED</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="label">Receipts record two times, and one of them starts null</span>
+          <p>
+            Every weight change writes a receipt to <code>evidence/</code> with the route UID,
+            resourceVersion before and after, and both weight sets. <code>route_effective_at</code> is left
+            null on purpose: an accepted API patch is not evidence that traffic moved, so it must be filled
+            from observed served traffic. Observation windows anchor to that second timestamp — never to
+            API acceptance, and never to planner text.
+          </p>
+        </div>
+      </section>
+
+      <section id="step-4" aria-labelledby="h1-4">
+        <div class="sec-head">
+          <span class="step-no" aria-hidden="true">04</span>
+          <h2 id="h1-4">The evidence path</h2>
+          <p class="sec-sub">Client-observed outcomes, three scoped keys, one stable document id</p>
+        </div>
+        <div class="sec-body">
+          <p>
+            The verifier's source of truth is what the client observed, not what the service logged: only
+            the client sees timeouts and gateway failures that never reached a pod. Records ship by
+            <code>_bulk</code> off the timing path, with <code>request_id</code> as the document
+            <code>_id</code> so a retried bulk item overwrites instead of double-counting. These are
+            regular indices, not data streams — data streams force generated ids.
+          </p>
+        </div>
+
+        <div class="code">
+          <div class="code-head">
+            <span class="path">shell · once per cluster, then once per service</span>
+            <button class="copy" type="button">Copy</button>
+          </div>
+<pre><span class="c"># Index templates + concrete indices. Reads .env, never prints it.</span>
+elastic/setup.sh
+
+<span class="c"># Three scoped keys. Needs ELASTIC_USERNAME/PASSWORD: an API key cannot mint</span>
+<span class="c"># a scoped child key, only a derived one that inherits everything.</span>
+elastic/create-api-keys.sh
+
+<span class="c"># Load generator — run it INSIDE the cluster (see the warning below).</span>
+src/loadgen/loadgen \
+  -url http://<span class="v" data-k="gateway2">checkout-gateway</span>.<span class="v" data-k="ns5">checkout</span>.svc.cluster.local<span class="v" data-k="path3">/checkout</span> \
+  -service <span class="v" data-k="svc5">checkout</span> \
+  -run-id <span class="v" data-k="runid2">demo-1</span> \
+  -rps <span class="n">100</span> -duration <span class="n">0</span> -warmup <span class="n">10s</span> \
+  -traffic-class ordinary \
+  -index sloproof-requests -batch-size <span class="n">500</span> -flush-interval <span class="n">2s</span></pre>
+        </div>
+
+        <div class="note stop">
+          <span class="label">D9 — the finding that invalidated the first real run</span>
+          <p>
+            Healthy v1 measured a p95 of <strong>339 ms</strong> against a 300 ms threshold, which would
+            have returned <span class="verdict v-failed">FAILED</span> for a service that was working
+            correctly. The service was not the cause: the same request from inside the cluster completes in
+            about 50 ms, while from the operator's laptop the TCP connect alone cost 245 ms. The generator
+            was running trans-Pacific.
+          </p>
+          <p>
+            Put the vantage point next to the service, or the contract measures the demo operator's
+            geography. Until the generator runs in-cluster, no run can produce
+            <span class="verdict v-proved">PROVED</span>.
+          </p>
+        </div>
+
+        <h3>Three keys, because the decider must not be able to write the evidence</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Key</th><th>Privilege</th><th>On</th></tr></thead>
+            <tbody>
+              <tr><td class="key">sloproof-ingest</td><td>write</td><td><code>sloproof-requests*</code></td></tr>
+              <tr><td class="key">sloproof-verifier</td><td><strong>read only</strong></td><td><code>requests*</code>, <code>contracts*</code>, <code>ledger*</code></td></tr>
+              <tr><td class="key">sloproof-controller</td><td>write</td><td><code>contracts*</code>, <code>ledger*</code>; reads requests</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sec-body">
+          The unrestricted key in <code>.env</code> is for setup only and must not be used by any runtime
+          component. State the limit honestly in the presentation: RBAC restricts resources and verbs, not
+          individual fields — weight-only mutation is enforced by executor validation, and a contract hash
+          is traceability, not privilege-enforced immutability.
+        </p>
+
+        <h3>The request document</h3>
+        <p class="sec-body">
+          <code>sloproof-requests</code> is <code>dynamic: strict</code>, so an unknown field is a rejected
+          document rather than a silent mapping change. A new service ships these fifteen fields and no others.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Field</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr><td class="key">@timestamp</td><td class="dim">date</td><td class="key">success</td><td class="dim">boolean</td></tr>
+              <tr><td class="key">run_id</td><td class="dim">keyword</td><td class="key">duration_ms</td><td class="dim">double</td></tr>
+              <tr><td class="key">request_id</td><td class="dim">keyword — also the _id</td><td class="key">started_at</td><td class="dim">date</td></tr>
+              <tr><td class="key">traffic_class</td><td class="dim">keyword</td><td class="key">ended_at</td><td class="dim">date</td></tr>
+              <tr><td class="key">service</td><td class="dim">keyword</td><td class="key">generator_id</td><td class="dim">keyword</td></tr>
+              <tr><td class="key">version</td><td class="dim">keyword</td><td class="key">config_hash</td><td class="dim">keyword</td></tr>
+              <tr><td class="key">status</td><td class="dim">integer</td><td class="key">target_host</td><td class="dim">keyword</td></tr>
+              <tr><td class="key">outcome</td><td class="dim">keyword</td><td class="dim" colspan="2"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

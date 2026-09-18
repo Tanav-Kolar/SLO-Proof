@@ -1,0 +1,14 @@
+{
+  "achieved_rps": 97.6,
+  "arrivals": 8000,
+  "bulk_calls": 41,
+  "completed": 8000,
+  "dropped_arrivals": 0,
+  "elapsed_seconds": 82,
+  "indexed_failed": 0,
+  "indexed_ok": 8000,
+  "reconciled": true,
+  "run_id": "d9-healthy-20260918",
+  "searchable_in_es": 8000,
+  "target_rps": 100
+}

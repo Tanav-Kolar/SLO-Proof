@@ -1,0 +1,75 @@
+{
+  "original": "sloproof-ledger",
+  "archive": "sloproof-archive-ledger-20260918t071814z",
+  "replacement": "sloproof-ledger-v1-20260918t071814z",
+  "preserved_count": 2,
+  "legacy_documents": {
+    "lvtDs6ABlxOEEDbr9Ps7": {
+      "service": "checkout",
+      "incident_class": "checkout_slo_burn",
+      "action": "no_action",
+      "verdict": "INCONCLUSIVE",
+      "approver": "none",
+      "confidence": "0.6",
+      "execution_receipt": "",
+      "proposal_accepted": true,
+      "action_success": "false",
+      "verification_success": "false",
+      "rolled_back": "true",
+      "approval_age_sec": 0,
+      "recorded_at": "2026-09-18T06:46:10Z"
+    },
+    "5ftPs6ABlxOEEDbrLP2-": {
+      "@timestamp": "2026-09-18T06:58:25Z",
+      "run_id": "demo-1",
+      "event": "agent_advisory",
+      "actor": "investigator",
+      "detail": {
+        "action": "revert",
+        "target_version": "v2",
+        "proposed_weights": null,
+        "confidence": "high",
+        "rationale": "Version v2 has a significantly lower success rate of 0.8 compared to v1's success rate of 1.0, and its p95 latency of 1141.9774499999999 ms is much higher than v1's 339.42879999999997 ms, both of which are outside acceptable limits. V1 meets all criteria with a high success rate and acceptable latency.",
+        "measurements": [
+          {
+            "version": "v1",
+            "requests": 1469,
+            "success_rate": 1.0,
+            "p95_ms": 339.42879999999997
+          },
+          {
+            "version": "v2",
+            "requests": 13220,
+            "success_rate": 0.8,
+            "p95_ms": 1141.9774499999999
+          }
+        ],
+        "cited_query_ids": [
+          "evidence-completeness@be4427d24d93",
+          "window-metrics@53cfadf2f6d1"
+        ],
+        "blocking_concerns": [
+          "v2's success rate is below the minimum required threshold.",
+          "v2's p95 latency exceeds the maximum allowed limit."
+        ],
+        "_validation": {
+          "ok": true,
+          "problems": []
+        },
+        "_evidence": {
+          "query_ids": [
+            "evidence-completeness@be4427d24d93",
+            "traffic-split@e5bbf2a2e230",
+            "window-metrics@53cfadf2f6d1"
+          ],
+          "window_start": "2026-09-18T06:28:42Z",
+          "window_end": "2026-09-18T06:31:12Z"
+        },
+        "_model": "us.amazon.nova-pro-v1:0"
+      },
+      "window_start": "2026-09-18T06:28:42Z",
+      "window_end": "2026-09-18T06:31:12Z"
+    }
+  },
+  "at": "20260918t071814z"
+}

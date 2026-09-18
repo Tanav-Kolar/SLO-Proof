@@ -1,0 +1,17 @@
+{
+  "event": "route_weights_changed",
+  "route_uid": "92094228-dbf6-4751-b787-f9e397212b63",
+  "resource_version_before": "9939",
+  "resource_version_after": "22523",
+  "weights_before": {
+    "checkout-v1": 100,
+    "checkout-v2": 0
+  },
+  "weights_after": {
+    "checkout-v1": 0,
+    "checkout-v2": 100
+  },
+  "api_accepted_at": "2026-09-18T08:09:56.434933+00:00",
+  "route_effective_at": null,
+  "note": "route_effective_at must be filled from observed served traffic, not from this timestamp."
+}

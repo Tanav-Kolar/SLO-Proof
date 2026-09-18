@@ -1,0 +1,68 @@
+{
+  "run_id": "demo-slow-20260918-01",
+  "config_hash": "ff04d131901cc8e7",
+  "pods": [
+    {
+      "pod": "checkout-v1-6d97d79f6d-5p2lb",
+      "version_response": {
+        "config_hash": "ff04d131901cc8e7",
+        "effective_config": {
+          "service_name": "checkout",
+          "version": "v1",
+          "fault_profile": "bad-recovery",
+          "run_id": "run-20260918T073812Z",
+          "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+          "port": 8080,
+          "base_latency_ms": 40,
+          "base_latency_jitter_ms": 15,
+          "fault_latency_ms": 450,
+          "fault_error_every_n": 0,
+          "fault_error_status": 500,
+          "request_timeout_ms": 3000,
+          "readiness_delay_ms": 2000,
+          "shutdown_grace_ms": 5000
+        },
+        "fault_profile": "bad-recovery",
+        "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+        "profile_description": "Latency breach without errors. Applied to checkout-v1 to drive the FAILED verdict run: p95 lands near 500 ms, over the contract threshold, while success rate stays at 100%.",
+        "run_id": "run-20260918T073812Z",
+        "served": 0,
+        "service": "checkout",
+        "started_at": "2026-09-18T08:09:33.488124206Z",
+        "uptime_seconds": 27,
+        "version": "v1"
+      }
+    },
+    {
+      "pod": "checkout-v1-6d97d79f6d-wwkpk",
+      "version_response": {
+        "config_hash": "ff04d131901cc8e7",
+        "effective_config": {
+          "service_name": "checkout",
+          "version": "v1",
+          "fault_profile": "bad-recovery",
+          "run_id": "run-20260918T073812Z",
+          "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+          "port": 8080,
+          "base_latency_ms": 40,
+          "base_latency_jitter_ms": 15,
+          "fault_latency_ms": 450,
+          "fault_error_every_n": 0,
+          "fault_error_status": 500,
+          "request_timeout_ms": 3000,
+          "readiness_delay_ms": 2000,
+          "shutdown_grace_ms": 5000
+        },
+        "fault_profile": "bad-recovery",
+        "image_digest": "994795733035.dkr.ecr.us-west-2.amazonaws.com/sloproof-checkout@sha256:4fe5939cf8fcb4e7f9f1ae4ca836cb3ab01165e4390b5ea220bbf5242bb9b5f3",
+        "profile_description": "Latency breach without errors. Applied to checkout-v1 to drive the FAILED verdict run: p95 lands near 500 ms, over the contract threshold, while success rate stays at 100%.",
+        "run_id": "run-20260918T073812Z",
+        "served": 0,
+        "service": "checkout",
+        "started_at": "2026-09-18T08:09:37.506530495Z",
+        "uptime_seconds": 25,
+        "version": "v1"
+      }
+    }
+  ]
+}
