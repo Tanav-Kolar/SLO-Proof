@@ -41,6 +41,7 @@ type profile struct {
 	FaultLatencyMS      int    `json:"fault_latency_ms"`
 	FaultErrorEveryN    int    `json:"fault_error_every_n"`
 	FaultErrorStatus    int    `json:"fault_error_status"`
+	TelemetryMode       string `json:"telemetry_mode"`
 }
 
 type config struct {
@@ -51,11 +52,12 @@ type config struct {
 	ImageDigest  string `json:"image_digest"`
 	Port         int    `json:"port"`
 
-	BaseLatencyMS       int `json:"base_latency_ms"`
-	BaseLatencyJitterMS int `json:"base_latency_jitter_ms"`
-	FaultLatencyMS      int `json:"fault_latency_ms"`
-	FaultErrorEveryN    int `json:"fault_error_every_n"`
-	FaultErrorStatus    int `json:"fault_error_status"`
+	BaseLatencyMS       int    `json:"base_latency_ms"`
+	BaseLatencyJitterMS int    `json:"base_latency_jitter_ms"`
+	FaultLatencyMS      int    `json:"fault_latency_ms"`
+	FaultErrorEveryN    int    `json:"fault_error_every_n"`
+	FaultErrorStatus    int    `json:"fault_error_status"`
+	TelemetryMode       string `json:"telemetry_mode"`
 
 	RequestTimeoutMS int `json:"request_timeout_ms"`
 	ReadinessDelayMS int `json:"readiness_delay_ms"`
@@ -67,9 +69,9 @@ type config struct {
 // same fingerprint across demo runs, which is what makes the value comparable
 // between the contract-freeze snapshot and the verdict snapshot.
 func (c config) behaviourFingerprint() string {
-	payload := fmt.Sprintf("v=%s|profile=%s|base=%d|jitter=%d|faultlat=%d|faulterr=%d|faultstatus=%d|timeout=%d",
+	payload := fmt.Sprintf("v=%s|profile=%s|base=%d|jitter=%d|faultlat=%d|faulterr=%d|faultstatus=%d|telemetry=%s|timeout=%d",
 		c.Version, c.FaultProfile, c.BaseLatencyMS, c.BaseLatencyJitterMS,
-		c.FaultLatencyMS, c.FaultErrorEveryN, c.FaultErrorStatus, c.RequestTimeoutMS)
+		c.FaultLatencyMS, c.FaultErrorEveryN, c.FaultErrorStatus, c.TelemetryMode, c.RequestTimeoutMS)
 	sum := sha256.Sum256([]byte(payload))
 	return hex.EncodeToString(sum[:])[:16]
 }
@@ -104,10 +106,17 @@ func loadConfig() (config, error) {
 		FaultLatencyMS:      envInt("FAULT_LATENCY_MS", p.FaultLatencyMS),
 		FaultErrorEveryN:    envInt("FAULT_ERROR_EVERY_N", p.FaultErrorEveryN),
 		FaultErrorStatus:    envInt("FAULT_ERROR_STATUS", p.FaultErrorStatus),
+		TelemetryMode:       envStr("TELEMETRY_MODE", p.TelemetryMode),
 
 		RequestTimeoutMS: envInt("REQUEST_TIMEOUT_MS", 3000),
 		ReadinessDelayMS: envInt("READINESS_DELAY_MS", 2000),
 		ShutdownGraceMS:  envInt("SHUTDOWN_GRACE_MS", 5000),
+	}
+	if cfg.TelemetryMode == "" {
+		cfg.TelemetryMode = "normal"
+	}
+	if cfg.TelemetryMode != "normal" && cfg.TelemetryMode != "suppress" {
+		return config{}, errors.New("TELEMETRY_MODE must be normal or suppress")
 	}
 
 	if cfg.FaultErrorEveryN < 0 {
@@ -250,6 +259,7 @@ func (s *server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Sloproof-Run-Id", runID)
 	w.Header().Set("X-Sloproof-Config-Hash", s.fingerprint)
 	w.Header().Set("X-Sloproof-Traffic-Class", class)
+	w.Header().Set("X-Sloproof-Telemetry-Mode", s.cfg.TelemetryMode)
 	w.WriteHeader(status)
 
 	_ = json.NewEncoder(w).Encode(map[string]any{

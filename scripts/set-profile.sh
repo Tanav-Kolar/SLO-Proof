@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Changes a version's fault profile. OPERATOR ACTION ONLY.
 #
-# Usage: scripts/set-profile.sh <v1|v2> <healthy|checkout-regression|bad-recovery>
+# Usage: scripts/set-profile.sh <v1|v2> <healthy|checkout-regression|bad-recovery|missing-telemetry>
 #
 # This is deliberately a separate script from set-weights.sh, run under the
 # operator's identity. The recovery executor changes route weights and nothing
@@ -11,11 +11,11 @@ cd "$(dirname "$0")/.."
 source scripts/_guard.sh
 
 require_context
-[[ $# -eq 2 ]] || { echo "usage: $0 <v1|v2> <healthy|checkout-regression|bad-recovery>" >&2; exit 1; }
+[[ $# -eq 2 ]] || { echo "usage: $0 <v1|v2> <healthy|checkout-regression|bad-recovery|missing-telemetry>" >&2; exit 1; }
 VERSION="$1"; PROFILE="$2"
 
 case "$VERSION" in v1|v2) ;; *) echo "version must be v1 or v2" >&2; exit 1 ;; esac
-case "$PROFILE" in healthy|checkout-regression|bad-recovery) ;;
+case "$PROFILE" in healthy|checkout-regression|bad-recovery|missing-telemetry) ;;
   *) echo "unknown profile: $PROFILE" >&2; exit 1 ;; esac
 
 kubectl -n "$NAMESPACE" patch configmap "checkout-${VERSION}-config" \

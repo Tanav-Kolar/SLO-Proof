@@ -83,6 +83,7 @@ type stats struct {
 	indexedOK   atomic.Uint64
 	indexedFail atomic.Uint64
 	bulkCalls   atomic.Uint64
+	suppressed  atomic.Uint64 // service-profile simulation of missing telemetry
 }
 
 func main() {
@@ -173,9 +174,13 @@ loop:
 				go func() {
 					defer reqWG.Done()
 					defer func() { <-sem }()
-					rec := doRequest(client, cfg, class, host)
+					rec, emit := doRequest(client, cfg, class, host)
 					st.completed.Add(1)
-					records <- rec
+					if emit {
+						records <- rec
+					} else {
+						st.suppressed.Add(1)
+					}
 				}()
 			default:
 				// Saturated. Never block the ticker: a delayed arrival would
@@ -192,7 +197,7 @@ loop:
 	report(cfg, st, time.Since(start))
 }
 
-func doRequest(client *http.Client, cfg config, class, host string) record {
+func doRequest(client *http.Client, cfg config, class, host string) (record, bool) {
 	reqID := newID()
 	started := time.Now().UTC()
 
@@ -212,7 +217,7 @@ func doRequest(client *http.Client, cfg config, class, host string) record {
 	if err != nil {
 		rec.Outcome = "build_error"
 		rec.finish(started)
-		return rec
+		return rec, true
 	}
 	req.Header.Set("X-Request-Id", reqID)
 	req.Header.Set("X-Run-Id", cfg.runID)
@@ -226,7 +231,7 @@ func doRequest(client *http.Client, cfg config, class, host string) record {
 		rec.Status = 0
 		rec.Success = false
 		rec.finish(started)
-		return rec
+		return rec, true
 	}
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body)
@@ -237,6 +242,7 @@ func doRequest(client *http.Client, cfg config, class, host string) record {
 		rec.Version = v
 	}
 	rec.ConfigHash = resp.Header.Get("X-Sloproof-Config-Hash")
+	emit := resp.Header.Get("X-Sloproof-Telemetry-Mode") != "suppress"
 	switch {
 	case rec.Success:
 		rec.Outcome = "success"
@@ -246,7 +252,7 @@ func doRequest(client *http.Client, cfg config, class, host string) record {
 		rec.Outcome = "http_error"
 	}
 	rec.finish(started)
-	return rec
+	return rec, emit
 }
 
 func (r *record) finish(started time.Time) {
@@ -378,18 +384,19 @@ func report(cfg config, st *stats, elapsed time.Duration) {
 	}
 
 	summary := map[string]any{
-		"run_id":           cfg.runID,
-		"elapsed_seconds":  round(elapsed.Seconds(), 1),
-		"target_rps":       cfg.rps,
-		"achieved_rps":     round(float64(completed)/elapsed.Seconds(), 1),
-		"arrivals":         arrivals,
-		"dropped_arrivals": dropped,
-		"completed":        completed,
-		"indexed_ok":       st.indexedOK.Load(),
-		"indexed_failed":   st.indexedFail.Load(),
-		"bulk_calls":       st.bulkCalls.Load(),
-		"searchable_in_es": searchable,
-		"reconciled":       searchable == int64(completed),
+		"run_id":               cfg.runID,
+		"elapsed_seconds":      round(elapsed.Seconds(), 1),
+		"target_rps":           cfg.rps,
+		"achieved_rps":         round(float64(completed)/elapsed.Seconds(), 1),
+		"arrivals":             arrivals,
+		"dropped_arrivals":     dropped,
+		"completed":            completed,
+		"telemetry_suppressed": st.suppressed.Load(),
+		"indexed_ok":           st.indexedOK.Load(),
+		"indexed_failed":       st.indexedFail.Load(),
+		"bulk_calls":           st.bulkCalls.Load(),
+		"searchable_in_es":     searchable,
+		"reconciled":           searchable == int64(completed),
 	}
 	out, _ := json.MarshalIndent(summary, "", "  ")
 	fmt.Println(string(out))
@@ -397,6 +404,10 @@ func report(cfg config, st *stats, elapsed time.Duration) {
 	if dropped > 0 {
 		fmt.Printf("\nWARNING: %d arrivals were dropped because the pool was saturated.\n"+
 			"Windows must be sized from measured counts, never from target_rps.\n", dropped)
+	}
+	if st.suppressed.Load() > 0 {
+		fmt.Printf("\nWARNING: %d completed requests deliberately withheld telemetry.\n"+
+			"Evidence is incomplete; the verdict must be INCONCLUSIVE.\n", st.suppressed.Load())
 	}
 	if searchable >= 0 && searchable != int64(completed) {
 		fmt.Printf("\nWARNING: %d records completed but %d are searchable. Evidence is\n"+
