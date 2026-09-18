@@ -1,0 +1,24 @@
+// Per-version contract metrics for one evaluation window.
+//
+// Parameters (positional, passed in the _query request's "params" array):
+//   ?run_id       the run under evaluation
+//   ?window_start inclusive, ISO-8601 UTC
+//   ?window_end   exclusive, ISO-8601 UTC
+//
+// traffic_class is filtered by explicit field, never by timestamp guesswork:
+// warmup and synthetic traffic carry their own label and the contract excludes
+// them by name. A timeout counts as a failure, which is why success_rate is
+// computed from the boolean the client observed rather than from HTTP status.
+FROM sloproof-requests
+| WHERE run_id == ?run_id
+    AND traffic_class == "ordinary"
+    AND @timestamp >= ?window_start
+    AND @timestamp <  ?window_end
+| STATS requests     = COUNT(*),
+        successes    = SUM(CASE(success, 1, 0)),
+        p95_ms       = PERCENTILE(duration_ms, 95),
+        p50_ms       = PERCENTILE(duration_ms, 50)
+      BY version
+| EVAL success_rate = successes::double / requests::double
+| KEEP version, requests, successes, success_rate, p50_ms, p95_ms
+| SORT version

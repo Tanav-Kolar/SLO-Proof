@@ -1,0 +1,33 @@
+{
+  "index_patterns": ["sloproof-ledger*"],
+  "priority": 500,
+  "_meta": {
+    "description": "Routing receipts, window completions, verdicts, and agent advisories. dynamic:false so unanticipated detail is still stored in _source without silently creating new indexed fields.",
+    "owner": "sloproof"
+  },
+  "template": {
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":     { "type": "date" },
+        "run_id":         { "type": "keyword" },
+        "event":          { "type": "keyword" },
+        "contract_hash":  { "type": "keyword" },
+        "actor":          { "type": "keyword" },
+        "version":        { "type": "keyword" },
+        "window_index":   { "type": "integer" },
+        "window_start":   { "type": "date" },
+        "window_end":     { "type": "date" },
+        "observed_count": { "type": "long" },
+        "indexed_count":  { "type": "long" },
+        "success_rate":   { "type": "double" },
+        "p95_ms":         { "type": "double" },
+        "verdict":        { "type": "keyword" },
+        "reason":         { "type": "keyword" },
+        "esql_query":     { "type": "keyword", "index": false },
+        "route_uid":      { "type": "keyword" },
+        "detail":         { "type": "object", "enabled": false }
+      }
+    }
+  }
+}

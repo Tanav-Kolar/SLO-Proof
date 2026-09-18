@@ -1,0 +1,30 @@
+{
+  "index_patterns": ["sloproof-requests*"],
+  "priority": 500,
+  "_meta": {
+    "description": "Client-observed request outcomes. This is the verifier's source of truth: it captures timeouts and gateway failures that never reached a pod, which service-side logging structurally cannot see.",
+    "owner": "sloproof"
+  },
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp":    { "type": "date" },
+        "run_id":        { "type": "keyword" },
+        "request_id":    { "type": "keyword" },
+        "traffic_class": { "type": "keyword" },
+        "service":       { "type": "keyword" },
+        "version":       { "type": "keyword" },
+        "status":        { "type": "integer" },
+        "outcome":       { "type": "keyword" },
+        "success":       { "type": "boolean" },
+        "duration_ms":   { "type": "double" },
+        "started_at":    { "type": "date" },
+        "ended_at":      { "type": "date" },
+        "generator_id":  { "type": "keyword" },
+        "config_hash":   { "type": "keyword" },
+        "target_host":   { "type": "keyword" }
+      }
+    }
+  }
+}

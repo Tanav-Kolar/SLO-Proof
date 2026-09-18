@@ -1,0 +1,22 @@
+{
+  "index_patterns": ["sloproof-contracts*"],
+  "priority": 500,
+  "_meta": {
+    "description": "Acceptance criteria frozen before a trial. The contract body is stored but not indexed: it is an immutable blob, addressed by hash.",
+    "owner": "sloproof"
+  },
+  "template": {
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp":    { "type": "date" },
+        "contract_hash": { "type": "keyword" },
+        "run_id":        { "type": "keyword" },
+        "service":       { "type": "keyword" },
+        "frozen_at":     { "type": "date" },
+        "frozen_by":     { "type": "keyword" },
+        "contract":      { "type": "object", "enabled": false }
+      }
+    }
+  }
+}
