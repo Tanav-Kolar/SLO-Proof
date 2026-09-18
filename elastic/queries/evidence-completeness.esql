@@ -4,17 +4,26 @@
 // and is the data fresh? An empty result is not zero errors -- it is missing
 // evidence, and the contract treats the two differently on purpose.
 //
+// Deliberately does NOT report a duplicate count. COUNT_DISTINCT in ES|QL is
+// approximate (HyperLogLog++), so requests - COUNT_DISTINCT(request_id) reads
+// as ~0.8% phantom duplicates on samples this size -- an artifact that would
+// wrongly trigger INCONCLUSIVE. Duplicates are structurally impossible anyway,
+// because request_id is the document _id, so a repeat overwrites rather than
+// double-counts. The real completeness check is the load generator's
+// completed-vs-searchable reconciliation.
+//
+// config_hashes must be 1. More than one means the service's behaviour changed
+// mid-window, which invalidates the comparison.
+//
 // Params: ?run_id, ?window_start, ?window_end
 FROM sloproof-requests
 | WHERE run_id == ?run_id AND traffic_class == "ordinary"
     AND @timestamp >= ?window_start AND @timestamp < ?window_end
 | STATS requests      = COUNT(*),
-        distinct_reqs = COUNT_DISTINCT(request_id),
         first_seen    = MIN(@timestamp),
         last_seen     = MAX(@timestamp),
         config_hashes = COUNT_DISTINCT(config_hash)
       BY version
-| EVAL meets_min_samples = requests >= 400,
-       duplicates        = requests - distinct_reqs
-| KEEP version, requests, meets_min_samples, duplicates, config_hashes, first_seen, last_seen
+| EVAL meets_min_samples = requests >= 400
+| KEEP version, requests, meets_min_samples, config_hashes, first_seen, last_seen
 | SORT version
