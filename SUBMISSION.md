@@ -205,56 +205,6 @@ trial says nothing about behaviour at full production load. What we do claim is 
 concurrent differential above, contract compliance, and that every number behind both
 can be re-derived from the retained queries.
 
-## Why a deterministic verifier
-
-An agent may argue for a recovery. It cannot award itself a pass.
-
-The contract hashes the exact query *text*, not just the thresholds, so a decision is
-pinned to bytes that cannot drift between freeze and verdict. That is what makes
-re-running it hours later reproduce the same answer, and it is the property a fluent
-paragraph cannot offer no matter how well cited it is.
-
-Everything a model produces sits downstream of that. The native workflow reads the
-recorded verdict, requires exactly one, branches on the matching deterministic policy,
-sends its Slack alert, and only then calls an agent. A run with no recorded decision
-blocks the review before any agent call — we kept that execution as evidence:
-`REVIEW_BLOCKED … 0 agent calls`.
-
-Server-side OpenTelemetry spans are available and deliberately not used for the
-verdict. In one window of `live-bad-recovery-20260918-01` the client observed 5,817
-failed requests that produced no spans at all, because they were rejected before
-reaching an instrumented pod — while the instrumented cohorts matched the client
-counts exactly. Telemetry is blindest where an SLO most needs to see. Spans are
-advisory context: `elastic/queries/otel-*.esql` and the `sloproof-otel-spans`
-dashboard place them beside the contract evidence for comparison, and the verifier's
-scoped credential is refused on that data with HTTP 403.
-
-## Elastic integration
-
-Elasticsearch Serverless stores client-observed request evidence, frozen contracts
-and the decision ledger in separate indices under separate API keys. ES|QL is the
-query language for every contract check.
-
-Agent Builder provides an Investigator, a Verdict Explainer and an Evidence Briefer,
-each restricted to three read-only tools with bounded queries. A native Elastic
-Workflow, `sloproof-loop`, sequences the review and sends a Slack alert on every
-deterministic outcome branch — passing stage, failed recovery and insufficient
-evidence. All three were delivered live to `#all-on-call-engineering-team`:
-
-| Outcome | Step | Receipt |
-|---|---|---|
-| PROVED | `notify_continue_rollout` | `ok: true`, ts `1789728283.725569` |
-| FAILED | `notify_failed_rollout` | `ok: true`, ts `1789726542.717359` |
-| INCONCLUSIVE | `notify_inconclusive_rollout` | `ok: true`, ts `1789726104.948059` |
-
-The alerts carry the per-window numbers, the policy explanation and the contract
-hash. No model output reaches them — a workflow test enforces that. The passing
-alert states in its own text that it is not an authorization, because a green
-Slack message is exactly the thing someone will read as approval.
-
-The workflow has no routing step and no verdict-writing step. Workflow completion
-is not an SLO pass.
-
 ## Demo
 
 ```bash
