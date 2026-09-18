@@ -107,7 +107,13 @@ python3 scripts/render-evidence.py
 python3 -m http.server 8768 --bind 127.0.0.1 --directory demo
 ```
 
-Open `http://127.0.0.1:8768/evidence.html`. It is a portable export: no API keys,
+Open `http://127.0.0.1:8768/` for the guided decision challenge. Follow
+[the showcase script](SHOWCASE_SCRIPT.md) or open “Presenter cues” on the page.
+Ask a judge to predict the result, reveal the recorded verdict, then open the
+actual saved Elastic review. The reveal controls change only the presentation.
+“Full evidence” opens `evidence.html` for deeper questions.
+
+These are portable exports: no API keys,
 network queries or execution controls are embedded. Refresh the page after
 regenerating. The page includes only real saved measurements and explicit
 verifier outputs from `evidence/*-verdict.json`; do not put test fixtures there.
@@ -117,7 +123,11 @@ each observation window. Percentiles remain per-window; they are never averaged
 into a misleading run-wide percentile. Missing evidence is displayed as
 unavailable, not zero latency.
 
-## Four-minute narration after the live gates pass
+## Alternative narration without audience participation
+
+The preferred interactive four-minute sequence is in
+[SHOWCASE_SCRIPT.md](SHOWCASE_SCRIPT.md). If the format does not allow audience
+participation, use this direct walkthrough:
 
 1. **Problem (30 seconds):** “When an intervention looks promising, how do we
    know it has actually met the recovery target?” Show the frozen contract.

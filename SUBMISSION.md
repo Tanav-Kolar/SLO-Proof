@@ -50,8 +50,10 @@ unchanged: this prototype does not autonomously promote or reverse traffic.
   and Evidence Briefer. A native Elastic Workflow retrieves the existing Go
   verdict, checks that exactly one decision exists, and sequences investigation
   and explanation. It has no routing or verdict-writing step.
-- Presentation: a portable HTML export shows saved measurements, verdicts,
-  receipts, and exact queries without embedding credentials.
+- Presentation: an interactive “Would you ship this recovery?” walkthrough asks
+  the audience to predict each result, then reveals the recorded Go verdict and
+  native Elastic review. A full evidence view retains receipts and exact queries.
+  The presentation works offline without credentials or traffic controls.
 
 The demo uses generated traffic and injected faults. Both checkout variants run
 the same image with different configuration. This is not an integration with an
@@ -69,8 +71,10 @@ python3 scripts/render-evidence.py
 python3 -m http.server 8768 --bind 127.0.0.1 --directory demo
 ```
 
-Open `http://127.0.0.1:8768/evidence.html`. This is an evidence export, not a live
-control dashboard. No recording or public demo URL has been supplied yet.
+Open `http://127.0.0.1:8768/`. Follow the
+[four-minute showcase script](docs/SHOWCASE_SCRIPT.md); use “Full evidence” for
+the audit view. This is a walkthrough of recorded results, not a live control
+dashboard. No recording or public demo URL has been supplied yet.
 
 Demonstrated with retained evidence:
 

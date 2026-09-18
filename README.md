@@ -4,6 +4,12 @@ Private team repository for the Elastic Forge the Future Hackathon.
 
 **Use `main` as the canonical demo branch.** See [the branch review](docs/BRANCH_REVIEW.md) for integrated work and deferred experiments.
 
+**Present the decision challenge:** open [`demo/index.html`](demo/index.html)
+and follow the [four-minute showcase script](docs/SHOWCASE_SCRIPT.md). Ask judges
+“Would you ship this recovery?”, then reveal the actual FAILED, PROVED and
+INCONCLUSIVE results. The portable walkthrough includes saved native Elastic
+reviews and inspectable evidence; it needs no credentials.
+
 For the current demo, start with [the operator runbook](docs/DEMO_RUNBOOK.md),
 [the integrated Elastic agents and workflow](elastic/README.md),
 [the two-hour finish plan](docs/TWO_HOUR_FINISH.md), and
