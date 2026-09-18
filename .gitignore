@@ -33,9 +33,9 @@ build/
 /SLOProof_Architecture_1.pdf
 /JUDGING_CRITERIA.md
 /AGENTS.md
+/CLAUDE.md
+/steering_docs/
 
 # Local demo kubeconfig (never target a real cluster)
 .kube/
 .local-scratch/
-
-/steering-docs/
