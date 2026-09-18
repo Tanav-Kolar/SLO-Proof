@@ -1,53 +1,69 @@
 #!/usr/bin/env bash
-# Runs the three fault profiles locally, with no cluster and no cloud account,
-# and checks each one lands where contracts/checkout-slo.json expects.
-#
-#   healthy              >= 99% success, p95 < 300 ms   -> trial can pass
-#   checkout-regression  visibly failing                -> the incident
-#   bad-recovery         100% success, p95 > 300 ms     -> FAILED verdict run
+# Verify all three profiles on isolated local ports, without cloud credentials.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-
-BIN="$(mktemp -d)/checkout"
-( cd src/checkout && go build -o "$BIN" . )
-echo "built $BIN"
+SMOKE_DIR="$(mktemp -d)"
+trap 'rm -rf "$SMOKE_DIR"' EXIT
+BIN="$SMOKE_DIR/checkout"
+(cd src/checkout && go build -o "$BIN" .)
+echo "built local checkout test binary"
 
 run_profile() {
-  local profile="$1" port="$2" version="$3"
+  local profile="$1" version="$2" port run_id pid ready="" status=0
+  port="$(python3 - <<'PY'
+import socket
+with socket.socket() as sock:
+    sock.bind(('127.0.0.1',0))
+    print(sock.getsockname()[1])
+PY
+)"
+  run_id="smoke-$$-${profile}"
   SERVICE_VERSION="$version" FAULT_PROFILE="$profile" PORT="$port" \
-    READINESS_DELAY_MS=300 RUN_ID="smoke" "$BIN" >"/tmp/checkout-$profile.log" 2>&1 &
-  local pid=$!
-  local ready=""
+    OTEL_SDK_DISABLED=true READINESS_DELAY_MS=300 SHUTDOWN_GRACE_MS=100 RUN_ID="$run_id" \
+    "$BIN" >"$SMOKE_DIR/$profile.log" 2>&1 &
+  pid=$!
   for _ in $(seq 1 100); do
+    kill -0 "$pid" 2>/dev/null || break
     if curl -sf "http://127.0.0.1:$port/readyz" >/dev/null 2>&1; then ready=yes; break; fi
     sleep 0.2
   done
   if [[ -z "$ready" ]]; then
-    echo "FAILED: $profile never became ready on port $port"; cat "/tmp/checkout-$profile.log"
-    kill -TERM "$pid" 2>/dev/null || true; return 1
+    echo "FAILED: $profile did not start on its isolated port" >&2
+    cat "$SMOKE_DIR/$profile.log" >&2
+    kill -TERM "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    return 1
   fi
   printf '%-22s ' "$profile"
-  python3 - "$port" <<'PY'
-import sys, json, time, urllib.request, urllib.error
+  python3 - "$port" "$profile" "$run_id" "$version" <<'PY' || status=$?
+import sys,json,time,urllib.request,urllib.error
 from concurrent.futures import ThreadPoolExecutor
-port = int(sys.argv[1]); n, conc = 300, 40
+port,profile,run_id,version=sys.argv[1:]
+with urllib.request.urlopen(f'http://127.0.0.1:{port}/version',timeout=5) as r:identity=json.load(r)
+if (identity['run_id'],identity['fault_profile'],identity['version'])!=(run_id,profile,version):
+    sys.exit('FAILED: port belongs to a different checkout process')
+n,conc=300,40
 def one(_):
-    t0 = time.perf_counter()
-    req = urllib.request.Request(f"http://127.0.0.1:{port}/checkout", method="POST")
+    started=time.perf_counter()
+    req=urllib.request.Request(f'http://127.0.0.1:{port}/checkout',method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=10) as r: code = r.status; r.read()
-    except urllib.error.HTTPError as e: code = e.code; e.read()
-    except Exception: code = 0
-    return code, (time.perf_counter() - t0) * 1000
-with ThreadPoolExecutor(max_workers=conc) as ex: res = list(ex.map(one, range(n)))
-lat = sorted(d for _, d in res); ok = sum(1 for c, _ in res if c == 200)
-print(json.dumps({"success_rate": round(ok/n, 4),
-                  "p95_ms": round(lat[min(int(0.95*len(lat)), len(lat)-1)], 1)}))
+        with urllib.request.urlopen(req,timeout=10) as r:code=r.status;r.read()
+    except urllib.error.HTTPError as e:code=e.code;e.read()
+    except Exception:code=0
+    return code,(time.perf_counter()-started)*1000
+with ThreadPoolExecutor(max_workers=conc) as pool:results=list(pool.map(one,range(n)))
+latencies=sorted(ms for _,ms in results);rate=sum(code==200 for code,_ in results)/n
+p95=latencies[min(int(.95*n),n-1)]
+expected={'healthy':rate>=.99 and p95<300,
+          'checkout-regression':.7<=rate<=.9 and p95>=800,
+          'bad-recovery':rate>=.99 and p95>=300}[profile]
+print(json.dumps({'success_rate':round(rate,4),'p95_ms':round(p95,1),'expected_behavior':expected}))
+if not expected:sys.exit('FAILED: profile did not satisfy its expected contract behavior')
 PY
   kill -TERM "$pid" 2>/dev/null || true
   wait "$pid" 2>/dev/null || true
+  return "$status"
 }
-
-run_profile healthy             18080 v1
-run_profile checkout-regression 18081 v2
-run_profile bad-recovery        18082 v1
+run_profile healthy v1
+run_profile checkout-regression v2
+run_profile bad-recovery v1

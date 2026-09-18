@@ -184,3 +184,21 @@ Builder investigation path.
 The contract file is the interface between this layer and the verifier, and the
 verifier is the gap that matters — until it exists there is no verdict, only
 measurements.
+
+## Optional diagnostic tracing
+
+The integrated service supports OTLP/HTTP traces. Tracing is disabled unless
+`OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is configured;
+`OTEL_SDK_DISABLED=true` also disables initialization. Missing trace setup does
+not prevent service startup. Kubernetes reads only the optional endpoint and
+headers keys from Secret `sloproof-otel-ingest`.
+
+Request spans carry run ID, request ID, traffic class, config hash and serving
+version. The `checkout -> quote` child span is explicitly marked
+`sloproof.simulated_dependency=true`: it describes an in-process simulation,
+not a separate dependency. These diagnostics do not enter the deterministic
+verifier's decision path. Existing request measurement logic and SLO thresholds
+are unchanged by the tracing integration.
+
+See `docs/BRANCH_REVIEW.md` for the source-branch assessment and the decision to
+keep the alternate Lambda executor outside the canonical demo workflow.

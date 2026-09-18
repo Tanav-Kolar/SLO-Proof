@@ -32,6 +32,15 @@ spec:
               containerPort: 8080
           envFrom:
             - configMapRef: { name: checkout-v2-config }
+          # Trace credentials cannot override fault profiles or service identity.
+          # Missing trace setup must not prevent the checkout service starting.
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                secretKeyRef: { name: sloproof-otel-ingest, key: OTEL_EXPORTER_OTLP_ENDPOINT, optional: true }
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              valueFrom:
+                secretKeyRef: { name: sloproof-otel-ingest, key: OTEL_EXPORTER_OTLP_HEADERS, optional: true }
           # Tolerant liveness on purpose: an active fault profile must not get
           # the pod restarted, or the incident disappears before it is measured.
           livenessProbe:
