@@ -20,31 +20,79 @@ the timestamp. That reproducibility is the product.
 
 ## Problem
 
-When an intervention looks promising, how do you know it actually met the recovery
-target? A confident AI summary doesn't establish it. Neither does a routing change
-that succeeded, or an error count that went down. Missing telemetry is worse than
-either, because an empty dashboard and a healthy one look the same.
+An incident is open. Someone proposes a fix, a slice of traffic is moved onto it, and
+a decision now has to be made under pressure by whoever is most tired: **did that
+actually work?**
 
-The specific failure we set out to prevent: shipping a candidate that is better
-than the incident version and still broken. Relative improvement reads as success,
-and the absolute target quietly stops mattering.
+Three answers are usually within reach. None of them settle it.
 
-## What it does
+**"Errors went down."** Down from what? During an incident, the thing you are
+comparing against is broken. A candidate that halves a 20% error rate looks like a
+triumph and still misses a 99% success target by a mile. Scoring a candidate against
+the version it replaces is the wrong frame at exactly the moment you depend on it,
+because the baseline *is* the incident.
 
-An operator freezes a contract for the checkout service before any routing change.
-The contract is data, not code — thresholds, window shape, eligibility rules and
+**"The dashboard looks healthy."** An empty result and a healthy result render
+identically. If the candidate's traffic never reached its pods, or its records never
+reached the index, the graph is flat — and the flatness means nothing at all. Absence
+of evidence is not evidence of recovery, and most tooling cannot tell you which one
+it is showing you.
+
+**"The assistant says it's fixed."** A model can read the telemetry and produce a
+fluent, well-cited paragraph concluding that recovery happened. It can produce the
+same paragraph when recovery did not happen. Nothing in that output is a criterion
+anyone can check afterwards, and nothing stops the next run from reaching a different
+conclusion on identical data.
+
+The difficulty is not measurement. It is four properties that have to hold at once:
+
+- **The criteria must be fixed before anyone sees the result.** Otherwise the
+  threshold drifts to meet the number, and nobody catches it, because the person
+  adjusting it is the person who wants to ship.
+- **The measurement must provably cover the cohort you routed to.** A verdict about
+  10% of traffic is worthless unless you can show that the 10% is what was measured.
+- **Missing data must be its own outcome** — not a quiet pass, and not a failure
+  either, since those demand different responses.
+- **Whoever benefits from a pass must not be able to grant one.** If the component
+  that recommends the fix can also declare it fixed, the gate is decorative.
+
+Miss any one and you get the failure we built this to prevent: shipping a candidate
+that is better than the incident version and still broken, because relative
+improvement read as success and the absolute target quietly stopped mattering.
+
+The teams with this problem are platform and SRE groups already doing progressive
+delivery. They have the routing controls and they have the telemetry. What they lack
+is an answer to "is it fixed?" that survives the postmortem.
+
+## How SLOProof answers it
+
+Each of those four properties maps to a mechanism, not a promise.
+
+**Fixed criteria.** An operator freezes a contract before any routing change. The
+contract is data, not code — thresholds, window shape, eligibility rules and
 freshness allowances in one JSON file, hashed into every artifact the run produces.
 
-A bounded trial sends 10% of traffic to the candidate. An in-cluster load generator
-records what the *client* observed, not what the server reported. A separate Go
-verifier, holding a credential that can read those records and nothing else, scores
-three non-overlapping 60-second windows: at least 400 candidate requests each, 99%
-success, p95 strictly below 300 ms. Completeness, reconciliation, configuration
-identity and the observed traffic split are all checked before a pass is possible.
+The thresholds are absolute: at least 400 candidate requests in each of three
+non-overlapping 60-second windows, 99% success, p95 strictly below 300 ms. Nothing
+in the contract refers to the version being replaced, so a broken baseline cannot
+launder a broken candidate.
 
-Then a deterministic policy turns the verdict into a next step, and Elastic's
-Agent Builder explains what happened. In that order — the decision is made before
-any model is asked for an opinion.
+**Provable cohort coverage.** A bounded trial sends 10% of traffic to the candidate,
+and the executor writes a receipt recording the weights it actually applied. An
+in-cluster load generator records what the *client* observed, not what the server
+reported. Each window then checks its observed candidate share against that receipt,
+reconciles generated records against searchable ones, and confirms the candidate's
+configuration never changed mid-window.
+
+**Missing data is its own verdict.** INCONCLUSIVE is a first-class outcome, distinct
+from FAILED. An empty result is never read as zero errors, and a run whose evidence
+is incomplete blocks progression without implying the candidate is bad.
+
+**The beneficiary cannot grant the pass.** The verifier is a separate Go binary
+holding a credential that can read the evidence indices and write nothing —
+enforced by the API key, verified live, and refused with HTTP 403 when it tries.
+Only after the verdict is recorded does a deterministic policy turn it into a next
+step, and only after that is a model asked for an opinion.
 
 PROVED means the observed trial met its contract. Nothing more. It authorises one
 guarded adjacent stage of an operator-started plan, which must freeze and measure
@@ -155,10 +203,10 @@ can be re-derived from the retained queries.
 
 An agent may argue for a recovery. It cannot award itself a pass.
 
-The decision engine is a Go binary with a read-only credential. It has no write path
-to the ledger, and the contract hashes the exact query *text*, not just the thresholds,
-so the decision is pinned to bytes that cannot drift between freeze and verdict. That
-is what makes re-running it hours later reproduce the same answer.
+The contract hashes the exact query *text*, not just the thresholds, so a decision is
+pinned to bytes that cannot drift between freeze and verdict. That is what makes
+re-running it hours later reproduce the same answer, and it is the property a fluent
+paragraph cannot offer no matter how well cited it is.
 
 Everything a model produces sits downstream of that. The native workflow reads the
 recorded verdict, requires exactly one, branches on the matching deterministic policy,
@@ -208,22 +256,15 @@ python3 scripts/render-evidence.py
 python3 -m http.server 8768 --bind 127.0.0.1 --directory demo
 ```
 
-Open `http://127.0.0.1:8768/`. The showcase asks the audience to predict each verdict
-before revealing the recorded one — the opening question is "our candidate returns
-100% successful checkouts, would you ship it?" and the answer is no. Four-minute
-script in [`docs/SHOWCASE_SCRIPT.md`](docs/SHOWCASE_SCRIPT.md); "Full evidence" opens
-the audit view; [`demo/process.html`](demo/process.html) walks contract freeze through
-operator review stage by stage.
+`http://127.0.0.1:8768/` opens the decision challenge: predict each verdict, then see
+the recorded one. It opens by asking whether you would ship a candidate with 100%
+successful checkouts; the answer is no, for the reason in "The result that matters"
+above. Offline export, no credentials.
 
-These pages are offline exports. No credentials, no live queries, no execution
-controls. Start with [the operator runbook](docs/DEMO_RUNBOOK.md) and
-[control-plane instructions](src/control/README.md) to run it live instead.
-
-```bash
-elastic/query.sh incident-timeline run_id=demo-1
-scripts/agent.sh ask --run-id demo-1 \
-  "Which version breached the latency target, and what evidence supports that?"
-```
+Running it live, the presenter script and the stage-by-stage process view are all in
+[the operator runbook](docs/DEMO_RUNBOOK.md),
+[the showcase script](docs/SHOWCASE_SCRIPT.md) and
+[`demo/process.html`](demo/process.html).
 
 ## Applying it to another service
 
