@@ -4,7 +4,7 @@ Fill this in as you build. It is the first thing judges read.
 
 ## Team
 
-- Team name:
+- Team name: tyr
 - Project name:
 - Members:
 
@@ -22,7 +22,7 @@ What services and data stores are in the path? Note Elastic, AWS, and Sarvam usa
 
 ## Demo
 
-- Live URL or recording:
+- Live URL or recording: 
 - How to run locally:
 - Sample queries or prompts:
 

@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "aws-core@claude-plugins-official": true,
+    "aws-serverless@claude-plugins-official": true,
+    "elastic-elasticsearch@elastic-agent-skills": true,
+    "elastic-kibana@elastic-agent-skills": true,
+    "elastic-observability@elastic-agent-skills": true,
+    "elastic-security@elastic-agent-skills": true,
+    "elastic-cloud@elastic-agent-skills": true
+  }
+}

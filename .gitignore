@@ -11,6 +11,9 @@ id_rsa.pub
 credentials.json
 secrets.json
 
+CLAUDE.md
+.claude/settings.local.json
+
 .DS_Store
 node_modules/
 __pycache__/
