@@ -22,5 +22,14 @@
     "fault_latency_ms": 450,
     "fault_error_every_n": 0,
     "fault_error_status": 500
+  },
+  "missing-telemetry": {
+    "description": "Healthy checkout responses deliberately carry a suppress signal so the demo load generator withholds their ES evidence. The verifier must return INCONCLUSIVE, never PROVED.",
+    "base_latency_ms": 40,
+    "base_latency_jitter_ms": 15,
+    "fault_latency_ms": 0,
+    "fault_error_every_n": 0,
+    "fault_error_status": 500,
+    "telemetry_mode": "suppress"
   }
 }

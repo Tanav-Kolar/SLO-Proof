@@ -38,6 +38,7 @@ concurrent (`scripts/smoke-test-local.sh`):
 | `healthy` | none | 100% | 82 ms | v1 baseline; passes the contract |
 | `checkout-regression` | +800 ms, 500 every 5th request | 80% | 878 ms | the v2 incident |
 | `bad-recovery` | +450 ms | 100% | 541 ms | v1 latency breach → FAILED verdict run |
+| `missing-telemetry` | healthy response; ES record suppressed | not measurable | not measurable | missing evidence → INCONCLUSIVE |
 
 Contract thresholds are success ≥99% and p95 <300 ms, so `healthy` passes with
 room and both fault profiles breach unambiguously.
@@ -76,6 +77,7 @@ Collapsing these is what makes a recovery demo unconvincing.
 | `FAULT_LATENCY_MS` | from profile | Added to `/checkout` only |
 | `FAULT_ERROR_EVERY_N` | from profile | `0` disables injection |
 | `FAULT_ERROR_STATUS` | from profile | |
+| `TELEMETRY_MODE` | from profile (`normal`) | `suppress` asks the demo load generator to withhold the client-observed ES record |
 | `REQUEST_TIMEOUT_MS` | `3000` | Bounds handling; exceeding it returns 504 with outcome `timeout` |
 | `READINESS_DELAY_MS` | `2000` | Readiness lags startup so rollouts do not admit cold pods |
 | `SHUTDOWN_GRACE_MS` | `5000` | Drain window; must stay below `terminationGracePeriodSeconds` (30s) |
